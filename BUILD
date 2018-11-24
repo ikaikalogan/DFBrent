@@ -1,6 +1,7 @@
 COMPILE_DEPS = CORE_DEPS + KRYO + CLI + [
     "//core/store/serializers:onos-core-serializers",
     "//core/store/primitives:onos-core-primitives",
+    "//utils/rest:onlab-rest-native",
 ]
 
 osgi_jar_with_tests(

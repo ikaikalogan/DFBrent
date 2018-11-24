@@ -18,15 +18,11 @@ package org.graph;
 import java.util.*;
 import org.apache.karaf.shell.commands.Command;
 import org.onlab.graph.DefaultEdgeWeigher;
-import org.onlab.graph.EdgeWeigher;
 import org.onlab.graph.Weight;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
-import org.onosproject.net.Path;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.topology.*;
-import org.onlab.graph.*;
 
 /**
  * Sample Apache Karaf CLI command
@@ -55,7 +51,7 @@ public class AppCommand extends AbstractShellCommand {
         Set<TopologyVertex> vertexes = graph.getVertexes(); // grab the vertexes from the current topologyon
         //Hashmaps and Iterables
         HashMap<String, Integer> idtonum = new HashMap<>();// deviceid to int
-        HashMap<String, String> idtoedges = new HashMap<>(); //device id to edges
+        HashMap<DeviceId, List> idtostats = new HashMap<>(); //device id to edges
         HashMap<DeviceId, List> idtoports = new HashMap<>(); // devices and their associated ports
 
         DefaultEdgeWeigher edgeWeigher = new DefaultEdgeWeigher();
@@ -72,19 +68,25 @@ public class AppCommand extends AbstractShellCommand {
             idtonum.put(name,y);
             idlist[y] = name;
             List ports = deviceService.getPorts(id);
+            List stats = deviceService.getPortStatistics(id);
+            idtostats.put(id,stats);
             idtoports.put(id,ports);
             y++;
         }
+        print("#####################    KEYS    ############################");
         //idtoports.forEach((k,v) -> print("Key = " + String.valueOf(k) + ", Value = " + String.valueOf(v)));
         for (DeviceId deviceId : idtoports.keySet()){
             print("Key " + String.valueOf(deviceId));
         }
+        print("#####################   VALUES   ###########################");
         for (List list : idtoports.values()) {
-            print("value " + String.valueOf(idtoports.values()));
+            print("value " + String.valueOf(list));
         }
+        print("#####################   WEIGHTS  ############################");
 
         //populate hashmap idtoedges - for each edge in the set TopologyEdge
         for (TopologyEdge edgetemp: edges) {
+            // compare the edge to each device in idlist
             // compare the edge to each device in idlist
             //print(String.valueOf(devicenum));
             for (int j = 0; j < devicenum; j++) {
@@ -112,11 +114,13 @@ public class AppCommand extends AbstractShellCommand {
                 }
             }
         }
+        print("#####################    MATRIX    ##########################");
         for (int i=0; i<devicenum;i++){
             for(int j = 0; j <devicenum; j++){
                 print(String.valueOf(adjmatrix[i][j]));
             }
         }
+        print("#####################      CUT     ##########################");
         // sample test adjacancy matrix to test s-t cut code in graph.java
 
         int test[][] = {{0, 16, 13, 0, 0, 0},
