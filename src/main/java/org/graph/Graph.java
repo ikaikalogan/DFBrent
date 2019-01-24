@@ -10,7 +10,12 @@ public class Graph {
         from source 's' to sink 't' in residual
         graph. Also fills parent[] to store the path
         */
-        String[] result = new String[10];
+
+        private String[] result = null;
+
+        public Graph(Integer indy){
+            this.result = new String[indy];
+        }
 
         public static boolean bfs(int[][] rGraph, int s,
                                    int t, int[] parent) {
@@ -108,7 +113,7 @@ public class Graph {
             for (int i = 0; i < graph.length; i++) {
                 for (int j = 0; j < graph.length; j++) {
                     if (graph[i][j] > 0 && isVisited[i] && !isVisited[j]) {
-                        result[w] = (i + " - " + j);
+                        result[w] = (i + "-" + j);
                         w++;
                         //System.out.println(i + " - " + j);
                     }
