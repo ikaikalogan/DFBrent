@@ -15,6 +15,7 @@
  */
 package org.graph;
 
+import javafx.util.Pair;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onlab.graph.DefaultEdgeWeigher;
@@ -48,6 +49,9 @@ public class AppCommand extends AbstractShellCommand {
     private int s = -1;
     @Argument(index = 1, name = "t"  , description = "destination", required = false, multiValued = false)
     private int t = -1;
+    @Argument(index = 2, name = "r" , description = "# of rules", required = false, multiValued = false)
+    private int r = 1;
+
     private final Logger logger = getLogger(getClass());
     private final TopologyListener listener = new TopologyListener() {
         @Override
@@ -68,6 +72,7 @@ public class AppCommand extends AbstractShellCommand {
         //instantiate variables for s-t cut
         log.info("Graph Application: Started with min cut between " + s + " and " + t);
         int x, y=0, rulesbefore=0, rulesafter=0;
+
 
         //activate ONOS services for getting device and topology information
         DeviceService deviceService = get(DeviceService.class);
@@ -97,6 +102,7 @@ public class AppCommand extends AbstractShellCommand {
         int devicenum = vertexes.size();
         int[][] adjmatrix = new int[devicenum][devicenum];
         DeviceId[] idlist = new DeviceId[devicenum];
+        Vector edgelist = new Vector();
 
         Graph graph1 = new Graph(devicenum);
         String[] result;
@@ -141,7 +147,7 @@ public class AppCommand extends AbstractShellCommand {
         //for (List stats : idtostats.values() ){
         //    print("stats :" + stats.toString());
         //}
-        //print("###########################   WEIGHTS  #########################################");
+        print("###########################   WEIGHTS  #########################################");
 
         for (TopologyEdge edgetemp: edges) {
 
@@ -179,16 +185,16 @@ public class AppCommand extends AbstractShellCommand {
                     String stringweight = String.valueOf(weight);
                     int lastindex = stringweight.lastIndexOf('}');
                     String sw = stringweight.substring(19,lastindex);
-                    //print(" The weight of " + edge + " is: " + sw);
-                    //print("-------------------------------------");
+                    print(" The weight of " + edge + " is: " + sw);
+                    print("-------------------------------------");
                     float floatweight = Float.valueOf(sw);
                     int intweight = Math.round(floatweight);
                     adjmatrix[row][column] = intweight;
                 }
             }
         }
-        //print("##########################    MATRIX    ########################################");
-        /*
+        /*print("##########################    MATRIX    ########################################");
+
         for (int i=0; i<devicenum;i++){
             print ("Row " + i + "-------------------------------------------------------- Row " + i);
             for(int j = 0; j <devicenum; j++){
@@ -210,8 +216,8 @@ public class AppCommand extends AbstractShellCommand {
         // run on cli arguments if input, default to run them on prepicked nodes
         //DO SOME ERROR CHECKING HERE
 
-        Vector devicelist = new Vector() ;
-        if((s != -1) && (t != -1)) {
+        Vector devicelist = new Vector();
+        if ((s != -1) && (t != -1)) {
             result = graph1.minCut(adjmatrix, s, t);
             x = result.length;
             y = 0;
@@ -220,17 +226,23 @@ public class AppCommand extends AbstractShellCommand {
                 if (result[i] != null) {
                     String sub = result[i];
                     String[] subtwo = sub.split("-");
-                    devicelist.add(y,(Integer.parseInt(subtwo[0])));
+                    devicelist.add(y, (Integer.parseInt(subtwo[0])));
+                    Integer edge1 = (Integer.parseInt(subtwo[0]));
+                    print(subtwo[0]);
                     //print("subtwo[0]: " + subtwo[0] + " devicelist: " + devicelist);
                     y++;
-                    devicelist.add(y,(Integer.parseInt(subtwo[1])));
+                    devicelist.add(y, (Integer.parseInt(subtwo[1])));
+                    Integer edge2 = (Integer.parseInt(subtwo[1]));
+                    Pair temppair = new Pair(edge1, edge2);
+                    edgelist.addElement(temppair);
+                    print(subtwo[1]);
                     //print("subtwo[1]: " + subtwo[1] + " devicelist: " + devicelist);
                     y++;
                     print(String.valueOf(result[i]));
+
                 }
             }
-        }
-        else {
+        } else {
             result = graph1.minCut(test, 0, 5);
             x = result.length;
             y = 0;
@@ -239,9 +251,15 @@ public class AppCommand extends AbstractShellCommand {
                     String sub = result[i];
                     String[] subtwo = sub.split("-");
                     devicelist.add(y, (Integer.parseInt(subtwo[0])));
+                    Integer edge1 = (Integer.parseInt(subtwo[0]));
+                    print(subtwo[0]);
                     //print("subtwo[0]: " + subtwo[0] + " devicelist: " + devicelist);
                     y++;
                     devicelist.add(y, (Integer.parseInt(subtwo[1])));
+                    Integer edge2 = (Integer.parseInt(subtwo[1]));
+                    Pair temppair = new Pair(edge1, edge2);
+                    edgelist.addElement(temppair);
+                    print(subtwo[1]);
                     //print("subtwo[1]: " + subtwo[1] + " devicelist: " + devicelist);
                     y++;
                     print(String.valueOf(result[i]));
@@ -249,16 +267,18 @@ public class AppCommand extends AbstractShellCommand {
             }
         }
         int cutsize = devicelist.size();
-        //print(String.valueOf(cutsize));
+
+
         int[] intarray = new int[cutsize];
         //print(devicelist.toString());
         int devicelistsize = devicelist.size();
-        for(int i =0; i < devicelistsize; i++) {
+        for (int i = 0; i < devicelistsize; i++) {
             Object tempobject = devicelist.get(i);
             String tempstring = tempobject.toString();
             int tempint = Integer.valueOf(tempstring);
             intarray[i] = tempint;
         }
+
         /*
         for(int element: intarray){
             print(String.valueOf(element));
@@ -290,60 +310,93 @@ public class AppCommand extends AbstractShellCommand {
 
         }
         */
+        print("######################### SHORTEST PATHS #######################################");
+        ShortestPath shorty = new ShortestPath(devicenum);
+        int temp = s;
+        try {
+            int[] shortydijkstra = shorty.dijkstra(adjmatrix, temp);
+            print("Vertex   Distance from Source");
+            for (int i = 0; i < devicenum; i++) {
+                print(i + "                 " + shortydijkstra[i]);
+            }
+        }
+        catch (Exception e){
+            print(e.toString());
+            log.info(e.toString());
+        }
+        print("######################### MIN MIN CUT    #######################################");
+        int[] finalcut = null;
+        try{
+
+        }
+        catch (Exception e){
+            print(e.toString());
+            log.info(e.toString());
+        }
+
+
         print("######################### ACL/FLOW RULES #######################################");
         // get rid of duplicates in the list
+        try {
+            final DefaultFlowRule.Builder flowrulebuilder = DefaultFlowRule.builder();
 
-        final DefaultFlowRule.Builder flowrulebuilder = DefaultFlowRule.builder();
+            print("The total number of flow rules is : ");
+            rulesbefore = flowRuleService.getFlowRuleCount();
+            print(String.valueOf(rulesbefore));
 
-        print("The total number of flow rules is : ");
-        rulesbefore = flowRuleService.getFlowRuleCount();
-        print(String.valueOf(rulesbefore));
+            //print("Starting Flow Build");
+            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
 
-        //print("Starting Flow Build");
-        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0.0.4/32");
+            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+            short type = 0x800;
+            int priority = 40000;
+            int timeout = 10000;
 
-        Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0.0.4/32");
-        ApplicationId applicationId = new DefaultApplicationId(158,"org.onosproject.graph");
-        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-        short type = 0x800;
-        int priority = 40000;
-        int timeout = 10000;
+            for (int i = 0; i < intarray.length; i++) {
+                //build rule one
+                Integer arraynum = intarray[i];
 
-        for (int i=0; i < intarray.length; i++) {
-            //build rule one
-            Integer arraynum = intarray[i];
-            String tempname = idtonum2.get(arraynum);
-            print(" rule place onto " + tempname);
+                String tempname = idtonum2.get(arraynum);
+                print(" rule place onto " + tempname);
+                DeviceId deviceId = DeviceId.deviceId(tempname);
 
-            DeviceId deviceId = DeviceId.deviceId(tempname);
-            
-            //print("Building Selector");
-            TrafficSelector selector = selectorbuilder.
-                    matchIPDst(ip4Prefixdst1).
-                    matchEthType(type).
-                    build();
-            //print("Building Treatment");
-            TrafficTreatment treatment = treatmentbuilder.
-                    drop().
-                    build();
-            //print("Building Rule");
-            FlowRule rule1 = flowrulebuilder.
-                    withSelector(selector).
-                    withTreatment(treatment).
-                    makePermanent().
-                    forDevice(deviceId).
-                    fromApp(applicationId).
-                    withPriority(priority).
-                    withHardTimeout(timeout).
-                    build();
 
-            //print("adding rules........................................");
-            flowRuleService.applyFlowRules(rule1);
-            log.info(" Graph Application Rule Built for Device " + tempname);
+                //print("Building Selector");
+                TrafficSelector selector = selectorbuilder.
+                        matchIPDst(ip4Prefixdst1).
+                        matchEthType(type).
+                        build();
+                //print("Building Treatment");
+                TrafficTreatment treatment = treatmentbuilder.
+                        drop().
+                        build();
+                //print("Building Rule");
+                FlowRule rule1 = flowrulebuilder.
+                        withSelector(selector).
+                        withTreatment(treatment).
+                        makePermanent().
+                        forDevice(deviceId).
+                        fromApp(applicationId).
+                        withPriority(priority).
+                        withHardTimeout(timeout).
+                        build();
+
+                //print("adding rules........................................");
+                flowRuleService.applyFlowRules(rule1);
+                log.info(" Graph Application Rule Built for Device " + tempname);
+
+            }
+            rulesafter = flowRuleService.getFlowRuleCount();
+            print("Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter);
         }
-        rulesafter = flowRuleService.getFlowRuleCount();
-        print("Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter);
+        catch (Exception e)
+        {
+            print(e.toString());
+            log.info(e.toString());
+        }
     }
 }
 

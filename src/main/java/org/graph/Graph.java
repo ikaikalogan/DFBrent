@@ -9,6 +9,9 @@ public class Graph {
         Returns true if there is a path
         from source 's' to sink 't' in residual
         graph. Also fills parent[] to store the path
+        code pulled from
+        https://www.geeksforgeeks.org/minimum-cut-in-a-directed-graph/
+        and modified to for use.
         */
 
         private String[] result = null;
