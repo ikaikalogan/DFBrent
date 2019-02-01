@@ -277,6 +277,7 @@ public class AppCommand extends AbstractShellCommand {
             String tempstring = tempobject.toString();
             int tempint = Integer.valueOf(tempstring);
             intarray[i] = tempint;
+            print(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint);
         }
 
         /*
@@ -322,7 +323,7 @@ public class AppCommand extends AbstractShellCommand {
 
         print("######################### MIN MIN CUT    #######################################");
         List<Integer> finalcut = new ArrayList<Integer>(); // final cut is the list of nodes to place flow rules on
-        print(String.valueOf(result.length));
+        //print(String.valueOf(result.length));
         try {
             //for (int i = 0; i < result.length; i++) {
             int i = 0;
