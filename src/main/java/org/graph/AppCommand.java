@@ -267,8 +267,6 @@ public class AppCommand extends AbstractShellCommand {
             }
         }
         int cutsize = devicelist.size();
-
-
         int[] intarray = new int[cutsize];
         //print(devicelist.toString());
         int devicelistsize = devicelist.size();
@@ -279,15 +277,6 @@ public class AppCommand extends AbstractShellCommand {
             intarray[i] = tempint;
             print(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint);
         }
-
-        /*
-        for(int element: intarray){
-            print(String.valueOf(element));
-        }
-        */
-
-        //String s = Integer.toString(x);
-        // print the edge cuts that make the s-t cut
         /*
         print("######################### Saving Results to File ########################################");
 
@@ -337,16 +326,16 @@ public class AppCommand extends AbstractShellCommand {
                 int distance2 = shortydijkstra[temp2];
                 print("Distance 1: " + distance1 + "    Distance 2: " + distance2);
                 if (distance1 == distance2) {
-                    finalcut.add(distance1);
-                    finalcut.add(distance2);
+                    finalcut.add(temp1);
+                    finalcut.add(temp2);
                 } else if (distance1 == 0) {
-                    finalcut.add(distance2);
+                    finalcut.add(temp2);
                 } else if (distance2 == 0) {
-                    finalcut.add(distance1);
+                    finalcut.add(temp1);
                 } else if (distance1 > distance2) {
-                    finalcut.add(distance2);
+                    finalcut.add(temp2);
                 } else if (distance1 < distance2) {
-                    finalcut.add(distance1);
+                    finalcut.add(temp1);
                 }
                 i++;
             }
