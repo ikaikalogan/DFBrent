@@ -312,29 +312,52 @@ public class AppCommand extends AbstractShellCommand {
         */
         print("######################### SHORTEST PATHS #######################################");
         ShortestPath shorty = new ShortestPath(devicenum);
-        int temp = s;
-        try {
-            int[] shortydijkstra = shorty.dijkstra(adjmatrix, temp);
-            print("Vertex   Distance from Source");
-            for (int i = 0; i < devicenum; i++) {
-                print(i + "                 " + shortydijkstra[i]);
-            }
+        int origin = s;
+
+        int[] shortydijkstra = shorty.dijkstra(adjmatrix, origin);
+        print("Vertex   Distance from Source");
+        for (int i = 0; i < devicenum; i++) {
+            print(i + "                 " + shortydijkstra[i]);
         }
-        catch (Exception e){
-            print(e.toString());
-            log.info(e.toString());
-        }
+
         print("######################### MIN MIN CUT    #######################################");
-        int[] finalcut = null;
-        try{
-
-        }
-        catch (Exception e){
+        List<Integer> finalcut = new ArrayList<Integer>(); // final cut is the list of nodes to place flow rules on
+        print(String.valueOf(result.length));
+        try {
+            //for (int i = 0; i < result.length; i++) {
+            int i = 0;
+            while (result[i] != null) {
+                String sub = result[i];
+                print(result[i]);
+                String[] edgenodes = sub.split("-");
+                int temp1 = Integer.parseInt(edgenodes[0]);
+                int temp2 = Integer.parseInt(edgenodes[1]);
+                int distance1 = shortydijkstra[temp1];
+                int distance2 = shortydijkstra[temp2];
+                print("Distance 1: " + distance1 + "    Distance 2: " + distance2);
+                if (distance1 == distance2) {
+                    finalcut.add(distance1);
+                    finalcut.add(distance2);
+                } else if (distance1 == 0) {
+                    finalcut.add(distance2);
+                } else if (distance2 == 0) {
+                    finalcut.add(distance1);
+                } else if (distance1 > distance2) {
+                    finalcut.add(distance2);
+                } else if (distance1 < distance2) {
+                    finalcut.add(distance1);
+                }
+                i++;
+            }
+            Iterator finalcutiterator = finalcut.iterator();
+            while (finalcutiterator.hasNext()) {
+                Object obj = finalcutiterator.next();
+                Integer finalcutint = Integer.valueOf(obj.toString());
+                print(" final cut node: " + finalcutint);
+            }
+        } catch (Exception e){
             print(e.toString());
-            log.info(e.toString());
         }
-
-
         print("######################### ACL/FLOW RULES #######################################");
         // get rid of duplicates in the list
         try {
@@ -355,9 +378,9 @@ public class AppCommand extends AbstractShellCommand {
             int priority = 40000;
             int timeout = 10000;
 
-            for (int i = 0; i < intarray.length; i++) {
+            for (int i = 0; i < finalcut.size(); i++) {
                 //build rule one
-                Integer arraynum = intarray[i];
+                Integer arraynum = finalcut.get(i);
 
                 String tempname = idtonum2.get(arraynum);
                 print(" rule place onto " + tempname);

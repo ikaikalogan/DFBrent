@@ -6,6 +6,7 @@ package org.graph;
 class ShortestPath {
     // A utility function to find the vertex with minimum distance value,
     // from the set of vertices not yet included in shortest path tree
+    // adapted from https://www.geeksforgeeks.org/dijkstras-shortest-path-algorithm-greedy-algo-7/
     private static int V = 0;
 
     //private int[][] adjmatrix = null;
