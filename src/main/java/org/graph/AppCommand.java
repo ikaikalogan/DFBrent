@@ -50,9 +50,10 @@ public class AppCommand extends AbstractShellCommand {
     private int t = -1;
     @Argument(index = 2, name = "r" , description = "# of rules", required = false, multiValued = false)
     private int r = 1;
-
     private final Logger logger = getLogger(getClass());
     @Override
+
+
     public void execute() {
         //instantiate variables for s-t cut
         log.info("Graph Application: Started with min cut between " + s + " and " + t);
@@ -353,7 +354,7 @@ public class AppCommand extends AbstractShellCommand {
                 int thirdoctect = 0;
                 int maxrules = r;
                 int addedrules = 0;
-                int loops = 0;
+                //int loops = 0;
                 int thirdoctectloop = ((r+2)/octetmax);
                 //iterate over the number of rules
                 for( int j = 0; j < thirdoctectloop + 1 ; j++) {
@@ -362,7 +363,10 @@ public class AppCommand extends AbstractShellCommand {
                         break;
                         //dont do anymore if == total rules
                     }
-                    thirdoctect = thirdoctect + loops;
+                    if(j != 0){
+                        thirdoctect = thirdoctect + 1;
+                    }
+
                     while(fourthoctet%octetmax < hostmax) {
                         if (addedrules == maxrules){
                             print("added rules: " + addedrules);
@@ -416,7 +420,7 @@ public class AppCommand extends AbstractShellCommand {
                         addedrules = addedrules + 1;
 
                     }
-                    loops = loops +1;
+                    //loops = loops +1;
                     fourthoctet = 0;
                 }
             }
