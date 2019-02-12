@@ -24,7 +24,6 @@ import org.onlab.packet.Ip4Prefix;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.DefaultApplicationId;
-import org.onosproject.event.Event;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.*;
@@ -53,20 +52,6 @@ public class AppCommand extends AbstractShellCommand {
     private int r = 1;
 
     private final Logger logger = getLogger(getClass());
-    private final TopologyListener listener = new TopologyListener() {
-        @Override
-        public void event(TopologyEvent event) {
-            //recordEvent(event, topologyGraphEventMetric);
-            log.debug("Topology Event: time = {} type = {} event = {}",
-                    event.time(), event.type(), event);
-            for (Event reason : event.reasons()) {
-                //recordEvent(event, topologyGraphReasonsEventMetric);
-                log.debug("Topology Event Reason: time = {} type = {} event = {}",
-                        reason.time(), reason.type(), reason);
-            }
-        }
-    };
-
     @Override
     public void execute() {
         //instantiate variables for s-t cut
@@ -81,7 +66,7 @@ public class AppCommand extends AbstractShellCommand {
         // grab the current topology and graph
         Topology topo = topologyService.currentTopology();
         // add a listener for topology events
-        topologyService.addListener(listener);
+
 
 
         TopologyGraph graph = topologyService.getGraph(topo);
@@ -358,49 +343,82 @@ public class AppCommand extends AbstractShellCommand {
             print(String.valueOf(rulesbefore));
 
             //print("Starting Flow Build");
-            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
 
-            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0.0.4/32");
-            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-            short type = 0x800;
-            int priority = 40000;
-            int timeout = 10000;
-
+            //for each node in the Min Min Cut
             for (int i = 0; i < finalcut.size(); i++) {
-                //build rule one
-                Integer arraynum = finalcut.get(i);
+                // create # of rules equal to the # in r
+                int octetmax = 255;
+                int hostmax = 254;
+                int fourthoctet = 2;
+                int thirdoctect = 0;
+                int maxrules = r;
+                int addedrules = 0;
+                int loops = 0;
+                int thirdoctectloop = ((r+2)/octetmax);
+                //iterate over the number of rules
+                for( int j = 0; j < thirdoctectloop + 1 ; j++) {
+                    if (addedrules == maxrules){
+                        print("added rules: " + addedrules);
+                        break;
+                        //dont do anymore if == total rules
+                    }
+                    thirdoctect = thirdoctect + loops;
+                    while(fourthoctet%octetmax < hostmax) {
+                        if (addedrules == maxrules){
+                            print("added rules: " + addedrules);
+                            break;
+                            //dont do anymore if == total rules
+                        }
+                        fourthoctet = (fourthoctet + 1) % (octetmax);
 
-                String tempname = idtonum2.get(arraynum);
-                print(" rule place onto " + tempname);
-                DeviceId deviceId = DeviceId.deviceId(tempname);
+                        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                        //build rule one
+                        ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                        short type = 0x800;
+                        int priority = 40000;
+                        int timeout = 10000;
 
+                        String thirdoctetstring = String.valueOf(thirdoctect);
+                        String fourthoctectstring = String.valueOf(fourthoctet);
 
-                //print("Building Selector");
-                TrafficSelector selector = selectorbuilder.
-                        matchIPDst(ip4Prefixdst1).
-                        matchEthType(type).
-                        build();
-                //print("Building Treatment");
-                TrafficTreatment treatment = treatmentbuilder.
-                        drop().
-                        build();
-                //print("Building Rule");
-                FlowRule rule1 = flowrulebuilder.
-                        withSelector(selector).
-                        withTreatment(treatment).
-                        makePermanent().
-                        forDevice(deviceId).
-                        fromApp(applicationId).
-                        withPriority(priority).
-                        withHardTimeout(timeout).
-                        build();
+                        Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
+                        print("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
+                        Integer arraynum = finalcut.get(i);
+                        String tempname = idtonum2.get(arraynum);
+                        print(" rule place onto " + tempname);
+                        DeviceId deviceId = DeviceId.deviceId(tempname);
 
-                //print("adding rules........................................");
-                flowRuleService.applyFlowRules(rule1);
-                log.info(" Graph Application Rule Built for Device " + tempname);
+                        //print("Building Selector");
+                        TrafficSelector selector = selectorbuilder.
+                                matchIPDst(ip4Prefixdst1).
+                                matchEthType(type).
+                                build();
+                        //print("Building Treatment");
+                        TrafficTreatment treatment = treatmentbuilder.
+                                drop().
+                                build();
+                        //print("Building Rule");
+                        FlowRule rule1 = flowrulebuilder.
+                                withSelector(selector).
+                                withTreatment(treatment).
+                                makePermanent().
+                                forDevice(deviceId).
+                                fromApp(applicationId).
+                                withPriority(priority).
+                                withHardTimeout(timeout).
+                                build();
 
+                        //print("adding rules........................................");
+                        flowRuleService.applyFlowRules(rule1);
+                        log.info(" Graph Application Rule Built for Device " + tempname);
+                        addedrules = addedrules + 1;
+
+                    }
+                    loops = loops +1;
+                    fourthoctet = 0;
+                }
             }
             rulesafter = flowRuleService.getFlowRuleCount();
             print("Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter);
