@@ -15,7 +15,6 @@
  */
 package org.graph;
 
-import javafx.util.Pair;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onlab.graph.DefaultEdgeWeigher;
@@ -44,16 +43,14 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class AppCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "s", description = "source", required = false, multiValued = false)
+    @Argument(index = 0, name = "s", description = "source", required = true, multiValued = false)
     private int s = -1;
-    @Argument(index = 1, name = "t"  , description = "destination", required = false, multiValued = false)
+    @Argument(index = 1, name = "t"  , description = "destination", required = true, multiValued = false)
     private int t = -1;
-    @Argument(index = 2, name = "r" , description = "# of rules", required = false, multiValued = false)
+    @Argument(index = 2, name = "r" , description = "# of rules", required = true, multiValued = false)
     private int r = 1;
     private final Logger logger = getLogger(getClass());
     @Override
-
-
     public void execute() {
         //instantiate variables for s-t cut
         log.info("Graph Application: Started with min cut between " + s + " and " + t);
@@ -67,7 +64,6 @@ public class AppCommand extends AbstractShellCommand {
         // grab the current topology and graph
         Topology topo = topologyService.currentTopology();
         // add a listener for topology events
-
 
 
         TopologyGraph graph = topologyService.getGraph(topo);
@@ -88,7 +84,7 @@ public class AppCommand extends AbstractShellCommand {
         int devicenum = vertexes.size();
         int[][] adjmatrix = new int[devicenum][devicenum];
         DeviceId[] idlist = new DeviceId[devicenum];
-        Vector edgelist = new Vector();
+        //Vector edgelist = new Vector();
 
         Graph graph1 = new Graph(devicenum);
         String[] result;
@@ -171,11 +167,12 @@ public class AppCommand extends AbstractShellCommand {
                     String stringweight = String.valueOf(weight);
                     int lastindex = stringweight.lastIndexOf('}');
                     String sw = stringweight.substring(19,lastindex);
-                    print(" The weight of " + edge + " is: " + sw);
-                    print("-------------------------------------");
+                    //print(" The weight of " + edge + " is: " + sw);
+                    //print("-------------------------------------");
                     float floatweight = Float.valueOf(sw);
                     int intweight = Math.round(floatweight);
                     adjmatrix[row][column] = intweight;
+                    adjmatrix[column][row] = intweight;
                 }
             }
         }
@@ -188,6 +185,15 @@ public class AppCommand extends AbstractShellCommand {
             }
         }
         */
+        print("######################### SHORTEST PATHS #######################################");
+        ShortestPath shorty = new ShortestPath(devicenum);
+        int origin = s;
+
+        int[] shortydijkstra = shorty.dijkstra(adjmatrix, origin);
+        print("Vertex   Distance from Source");
+        for (int i = 0; i < devicenum; i++) {
+            print(i + "                 " + shortydijkstra[i]);
+        }
         print("##########################      CUT     ########################################");
 
         int[][] test = {{0, 16, 13, 0, 0, 0},
@@ -203,6 +209,7 @@ public class AppCommand extends AbstractShellCommand {
         //DO SOME ERROR CHECKING HERE
 
         Vector devicelist = new Vector();
+        HashMap<Integer,Integer> nodedistance = new HashMap(); //Key:node Value: Distance from source
         if ((s != -1) && (t != -1)) {
             result = graph1.minCut(adjmatrix, s, t);
             x = result.length;
@@ -212,16 +219,22 @@ public class AppCommand extends AbstractShellCommand {
                 if (result[i] != null) {
                     String sub = result[i];
                     String[] subtwo = sub.split("-");
-                    devicelist.add(y, (Integer.parseInt(subtwo[0])));
-                    Integer edge1 = (Integer.parseInt(subtwo[0]));
-                    print(subtwo[0]);
+                    int device0 = Integer.parseInt(subtwo[0]);
+                    devicelist.add(y, (device0));
+                    int distance0 = shortydijkstra[device0];
+                    nodedistance.put(device0,distance0);
+                    //Integer edge1 = (Integer.parseInt(subtwo[0]));
+                    //print(subtwo[0]);
                     //print("subtwo[0]: " + subtwo[0] + " devicelist: " + devicelist);
                     y++;
-                    devicelist.add(y, (Integer.parseInt(subtwo[1])));
-                    Integer edge2 = (Integer.parseInt(subtwo[1]));
-                    Pair temppair = new Pair(edge1, edge2);
-                    edgelist.addElement(temppair);
-                    print(subtwo[1]);
+                    int device1 = Integer.parseInt(subtwo[1]);
+                    devicelist.add(y, (device1));
+                    int distance1 = shortydijkstra[device1];
+                    nodedistance.put(device1,distance1);
+                    //Integer edge2 = (Integer.parseInt(subtwo[1]));
+                    //Pair temppair = new Pair(edge1, edge2);
+                    //edgelist.addElement(temppair);
+                    //print(subtwo[1]);
                     //print("subtwo[1]: " + subtwo[1] + " devicelist: " + devicelist);
                     y++;
                     print(String.valueOf(result[i]));
@@ -236,100 +249,71 @@ public class AppCommand extends AbstractShellCommand {
                 if (result[i] != null) {
                     String sub = result[i];
                     String[] subtwo = sub.split("-");
-                    devicelist.add(y, (Integer.parseInt(subtwo[0])));
-                    Integer edge1 = (Integer.parseInt(subtwo[0]));
-                    print(subtwo[0]);
+                    int device0 = Integer.parseInt(subtwo[0]);
+                    devicelist.add(y, (device0));
+                    int distance0 = shortydijkstra[device0];
+                    nodedistance.put(device0,distance0);
+                    //Integer edge1 = (Integer.parseInt(subtwo[0]));
+                    //print(subtwo[0]);
                     //print("subtwo[0]: " + subtwo[0] + " devicelist: " + devicelist);
                     y++;
-                    devicelist.add(y, (Integer.parseInt(subtwo[1])));
-                    Integer edge2 = (Integer.parseInt(subtwo[1]));
-                    Pair temppair = new Pair(edge1, edge2);
-                    edgelist.addElement(temppair);
-                    print(subtwo[1]);
+                    int device1 = Integer.parseInt(subtwo[1]);
+                    devicelist.add(y, (device1));
+                    int distance1 = shortydijkstra[device1];
+                    nodedistance.put(device1,distance1);
+                    //Integer edge2 = (Integer.parseInt(subtwo[1]));
+                    //Pair temppair = new Pair(edge1, edge2);
+                    //edgelist.addElement(temppair);
+                    //print(subtwo[1]);
                     //print("subtwo[1]: " + subtwo[1] + " devicelist: " + devicelist);
                     y++;
                     print(String.valueOf(result[i]));
                 }
             }
         }
-        int cutsize = devicelist.size();
-        int[] intarray = new int[cutsize];
+        //int cutsize = devicelist.size();
+        //int[] intarray = new int[cutsize];
         //print(devicelist.toString());
         int devicelistsize = devicelist.size();
         for (int i = 0; i < devicelistsize; i++) {
             Object tempobject = devicelist.get(i);
             String tempstring = tempobject.toString();
             int tempint = Integer.valueOf(tempstring);
-            intarray[i] = tempint;
+            //intarray[i] = tempint;
             print(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint);
         }
-        /*
-        print("######################### Saving Results to File ########################################");
-
-        final String FILENAME = "/home/brent/testfiles/filename.txt";
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILENAME))) {
-
-            String content = "This is a test!\n";
-
-            bw.write(content);
-
-            // no need to close it.
-            //bw.close();
-
-            print("Done");
-
-        } catch (IOException e) {
-
-            print(e.toString());
-            print("didn't work");
-
-        }
-        */
-        print("######################### SHORTEST PATHS #######################################");
-        ShortestPath shorty = new ShortestPath(devicenum);
-        int origin = s;
-
-        int[] shortydijkstra = shorty.dijkstra(adjmatrix, origin);
-        print("Vertex   Distance from Source");
-        for (int i = 0; i < devicenum; i++) {
-            print(i + "                 " + shortydijkstra[i]);
-        }
-
         print("######################### MIN MIN CUT    #######################################");
-        List<Integer> finalcut = new ArrayList<Integer>(); // final cut is the list of nodes to place flow rules on
+        //List<Integer> finalcut = new ArrayList<Integer>(); // final cut is the list of nodes to place flow rules on
         //print(String.valueOf(result.length));
         try {
             //for (int i = 0; i < result.length; i++) {
+            //sorting the max flow min cut set
             int i = 0;
             while (result[i] != null) {
                 String sub = result[i];
                 print(result[i]);
                 String[] edgenodes = sub.split("-");
-                int temp1 = Integer.parseInt(edgenodes[0]);
-                int temp2 = Integer.parseInt(edgenodes[1]);
-                int distance1 = shortydijkstra[temp1];
-                int distance2 = shortydijkstra[temp2];
-                print("Distance 1: " + distance1 + "    Distance 2: " + distance2);
-                if (distance1 == distance2) {
-                    finalcut.add(temp1);
-                    finalcut.add(temp2);
-                } else if (distance1 == 0) {
-                    finalcut.add(temp2);
-                } else if (distance2 == 0) {
-                    finalcut.add(temp1);
-                } else if (distance1 > distance2) {
-                    finalcut.add(temp2);
-                } else if (distance1 < distance2) {
-                    finalcut.add(temp1);
+                int node1 = Integer.parseInt(edgenodes[0]);
+                int node2 = Integer.parseInt(edgenodes[1]);
+                int dist1 = nodedistance.get(node1); //get node 1 distance
+                int dist2 = nodedistance.get(node2); //get node 2 distance
+                //int distance1 = shortydijkstra[temp1];
+                //int distance2 = shortydijkstra[temp2];
+                //print("Distance 1: " + distance1 + "    Distance 2: " + distance2);
+                if (dist1 < dist2) {
+                    nodedistance.remove(node2);
+                } else if (dist1 > dist2) {
+                    nodedistance.remove(node1);
                 }
                 i++;
             }
-            Iterator finalcutiterator = finalcut.iterator();
-            while (finalcutiterator.hasNext()) {
-                Object obj = finalcutiterator.next();
+            Set finalset = nodedistance.keySet();
+            Iterator nodedistanceiterator = finalset.iterator();
+            while (nodedistanceiterator.hasNext()) {
+                Object obj = nodedistanceiterator.next();
                 Integer finalcutint = Integer.valueOf(obj.toString());
-                print(" final cut node: " + finalcutint);
+                String finalcutnode = idtonum2.get(finalcutint);
+                print(" final cut node: " + finalcutnode);
             }
         } catch (Exception e){
             print(e.toString());
@@ -346,8 +330,13 @@ public class AppCommand extends AbstractShellCommand {
             //print("Starting Flow Build");
 
             //for each node in the Min Min Cut
-            for (int i = 0; i < finalcut.size(); i++) {
+            //for (int i = 0; i < nodedistance.size(); i++) {
+            Set finale = nodedistance.keySet();
+            Iterator finaleiterator = finale.iterator();
+            while(finaleiterator.hasNext()){
                 // create # of rules equal to the # in r
+                Object finalobj = finaleiterator.next();
+                Integer finaleint = Integer.valueOf(finalobj.toString());
                 int octetmax = 255;
                 int hostmax = 254;
                 int fourthoctet = 2;
@@ -389,8 +378,8 @@ public class AppCommand extends AbstractShellCommand {
 
                         Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
                         print("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
-                        Integer arraynum = finalcut.get(i);
-                        String tempname = idtonum2.get(arraynum);
+                        //Integer arraynum = nodedistance.get(i);
+                        String tempname = idtonum2.get(finaleint);
                         print(" rule place onto " + tempname);
                         DeviceId deviceId = DeviceId.deviceId(tempname);
 
