@@ -403,36 +403,29 @@ public class AppCommand extends AbstractShellCommand {
         LinkService linkService = get(LinkService.class);
         linkService.addListener(linkListener);
         int x, y=0, rulesbefore=0, rulesafter=0, rulesadded=0;
-        //activate ONOS services for getting device and topology information
         DeviceService deviceService = get(DeviceService.class);
         TopologyService topologyService = get(TopologyService.class);
-        // grab the current topology and graph
         Topology topo = topologyService.currentTopology();
         //listenerRegistry.addListener(tl);
         TopologyGraph graph = topologyService.getGraph(topo);
-        // grab the edges and nodes (vertexes) for building an adjacency matrix and building hashmaps
         Set<TopologyEdge> edges = graph.getEdges(); //grab the edges from current topology
         Set<TopologyVertex> vertexes = graph.getVertexes(); // grab the vertexes from the current topologyon
-        //Hashmaps and Iterables
         HashMap<DeviceId, Integer> idtonum = new HashMap<>();// deviceid to int
         HashMap<Integer,String> idtonum2 = new HashMap<>();//for rules
         HashMap<DeviceId, List> idtostats = new HashMap<>(); //device id to edges
         HashMap<DeviceId, List> idtoports = new HashMap<>(); // devices and their associated ports
-        //Weigher for link topology
         DefaultEdgeWeigher edgeWeigher = new DefaultEdgeWeigher();
-        //Flow Rule Instantiations
         FlowRuleService flowRuleService = get(FlowRuleService.class);
         int devicenum = vertexes.size();
         int[][] adjmatrix = new int[devicenum][devicenum];
         DeviceId[] idlist = new DeviceId[devicenum];
-        //Vector edgelist = new Vector();
         Graph graph1 = new Graph(devicenum);
         String[] result;
+        String printout= "";
+
         for (TopologyVertex temp1: vertexes){
-            //print(String.valueOf(temp1));
             String name = String.valueOf(temp1);
             DeviceId id = temp1.deviceId();
-            //change from name
             idtonum.put(id,y);
             idtonum2.put(y,name);
             idlist[y] = id;
@@ -443,6 +436,8 @@ public class AppCommand extends AbstractShellCommand {
             y++;
         }
         print("########################## device id to matrix number ##########################");
+        printout = printout.concat(
+                "########################## device id to matrix number ##########################"+"\n");
         //get a set of entries
         Set set = idtonum.entrySet();
         //get an iterator
@@ -450,8 +445,11 @@ public class AppCommand extends AbstractShellCommand {
         while(iterator.hasNext()){
             Map.Entry entry = (Map.Entry)iterator.next();
             print("Device id: " + entry.getKey() + " ; matrix number : " + entry.getValue());
+            printout = printout.concat("Device id: " + entry.getKey() + " ; matrix number : " + entry.getValue()+"\n");
         }
         print("###########################   WEIGHTS  #########################################");
+        printout = printout.concat(
+                "###########################   WEIGHTS  #########################################"+"\n");
         for (TopologyEdge edgetemp: edges) {
             for (int j = 0; j < devicenum; j++) {
                 //DefaultTopologyEdge{src=of:0000000000000001, dst=of:0000000000000002}
@@ -485,22 +483,32 @@ public class AppCommand extends AbstractShellCommand {
             }
         }
         print("##########################    MATRIX    ########################################");
-
+        printout = printout.concat(
+                "##########################    MATRIX    ########################################"+"\n");
         for (int i=0; i<devicenum;i++){
             print ("Row " + i + "-------------------------------------------------------- Row " + i);
+            printout = printout.concat(
+                    "Row " + i + "-------------------------------------------------------- Row " + i+"\n");
             for(int j = 0; j <devicenum; j++){
                 print(String.valueOf(adjmatrix[i][j]));
+                printout = printout.concat(adjmatrix[i][j] +"\n");
             }
         }
         print("######################### SHORTEST PATHS #######################################");
+        printout = printout.concat(
+                "######################### SHORTEST PATHS #######################################"+"\n");
         ShortestPath shorty = new ShortestPath(devicenum);
         int origin = s;
         int[] shortydijkstra = shorty.dijkstra(adjmatrix, origin);
         print("Vertex   Distance from Source");
+        printout = printout.concat("Vertex   Distance from Source"+"\n");
         for (int i = 0; i < devicenum; i++) {
             print(i + "                 " + shortydijkstra[i]);
+            printout = printout.concat(i + "                 " + shortydijkstra[i]+"\n");
         }
         print("##########################      CUT     ########################################");
+        printout=printout.concat(
+                "##########################      CUT     ########################################"+"\n");
         Vector devicelist = new Vector();
         HashMap<Integer,Integer> nodedistance = new HashMap(); //Key:node Value: Distance from source
         if ((s != -1) && (t != -1)) {
@@ -523,6 +531,7 @@ public class AppCommand extends AbstractShellCommand {
                     nodedistance.put(device1,distance1);
                     y++;
                     print(String.valueOf(result[i]));
+                    printout = printout.concat(result[i] +"\n");
 
                 }
             }
@@ -534,18 +543,17 @@ public class AppCommand extends AbstractShellCommand {
             int tempint = Integer.valueOf(tempstring);
             //intarray[i] = tempint;
             print(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint);
+            printout=printout.concat(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint+"\n");
         }
         print("######################### MIN MIN CUT    #######################################");
-        //List<Integer> finalcut = new ArrayList<Integer>(); // final cut is the list of nodes to place flow rules on
-        //print(String.valueOf(result.length));
+        printout=printout.concat("######################### MIN MIN CUT    #######################################"+"\n");
         try {
-            //for (int i = 0; i < result.length; i++) {
-            //sorting the max flow min cut set
             result = graph1.minCut(adjmatrix, s, t);
             int i = 0;
             while (result[i] != null) {
                 String sub = result[i];
                 print(result[i]);
+                printout=printout.concat(result[i]+"\n");
                 String[] edgenodes = sub.split("-");
                 int node1 = Integer.parseInt(edgenodes[0]);
                 int node2 = Integer.parseInt(edgenodes[1]);
@@ -565,23 +573,24 @@ public class AppCommand extends AbstractShellCommand {
                 Integer finalcutint = Integer.valueOf(obj.toString());
                 String finalcutnode = idtonum2.get(finalcutint);
                 print(" final cut node: " + finalcutnode);
+                printout=printout.concat(" final cut node: " + finalcutnode+"\n");
             }
         } catch (Exception e){
             print(e.toString());
         }
         print("######################### ACL/FLOW RULES #######################################");
+        printout=printout.concat(
+                "######################### ACL/FLOW RULES #######################################"+"\n");
         // get rid of duplicates in the list
         try {
             final DefaultFlowRule.Builder flowrulebuilder = DefaultFlowRule.builder();
 
             print("The total number of flow rules is : ");
+            printout = printout.concat("The total number of flow rules is : ");
             rulesbefore = flowRuleService.getFlowRuleCount();
             print(String.valueOf(rulesbefore));
+            printout = printout.concat(rulesbefore +"\n");
 
-            //print("Starting Flow Build");
-
-            //for each node in the Min Min Cut
-            //for (int i = 0; i < nodedistance.size(); i++) {
             Set finale = nodedistance.keySet();
             Iterator finaleiterator = finale.iterator();
             while(finaleiterator.hasNext()){
@@ -600,6 +609,7 @@ public class AppCommand extends AbstractShellCommand {
                 for( int j = 0; j < thirdoctectloop + 1 ; j++) {
                     if (addedrules == maxrules){
                         print("added rules: " + addedrules);
+                        printout=printout.concat("added rules: " + addedrules+"\n");
                         break;
                         //dont do anymore if == total rules
                     }
@@ -610,6 +620,7 @@ public class AppCommand extends AbstractShellCommand {
                     while(fourthoctet%octetmax < hostmax) {
                         if (addedrules == maxrules){
                             print("added rules: " + addedrules);
+                            printout = printout.concat("added rules: " + addedrules);
                             rulesadded = addedrules;
                             break;
                             //dont do anymore if == total rules
@@ -630,21 +641,19 @@ public class AppCommand extends AbstractShellCommand {
 
                         Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
                         print("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
+                        printout=printout.concat("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32"+"\n");
                         //Integer arraynum = nodedistance.get(i);
                         String tempname = idtonum2.get(finaleint);
                         print(" rule place onto " + tempname);
+                        printout = printout.concat(" rule place onto " + tempname+"\n");
                         DeviceId deviceId = DeviceId.deviceId(tempname);
-
-                        //print("Building Selector");
                         TrafficSelector selector = selectorbuilder.
                                 matchIPDst(ip4Prefixdst1).
                                 matchEthType(type).
                                 build();
-                        //print("Building Treatment");
                         TrafficTreatment treatment = treatmentbuilder.
                                 drop().
                                 build();
-                        //print("Building Rule");
                         FlowRule rule1 = flowrulebuilder.
                                 withSelector(selector).
                                 withTreatment(treatment).
@@ -655,10 +664,8 @@ public class AppCommand extends AbstractShellCommand {
                                 withHardTimeout(timeout).
                                 build();
 
-                        //print("adding rules........................................");
                         flowRuleService.applyFlowRules(rule1);
                         addedrules = addedrules + 1;
-
                     }
                     //loops = loops +1;
                     fourthoctet = 0;
@@ -666,6 +673,8 @@ public class AppCommand extends AbstractShellCommand {
             }
             rulesafter = flowRuleService.getFlowRuleCount();
             print("Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter);
+            printout=printout.concat(
+                    "Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter+"\n");
             print("#############################Printing Results###############################");
             try{
                 String rulescreated = String.valueOf(rulesadded);
@@ -680,12 +689,12 @@ public class AppCommand extends AbstractShellCommand {
                 }
                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
                 FileWriter fileWriter = new FileWriter("/home/brent/captures/OUTCOME"+fileName+".txt");
-                fileWriter.write("rules created : " + rulescreated +
-                        " | Rules requested : " + rulesrequested + " | Rules added: " + rules );
+                fileWriter.write("rules created : " + rulescreated + "\n"+
+                        "  Rules requested : " + rulesrequested + "\n" + "  Rules added: " + rules + "\n" + printout  );
                 fileWriter.close();
             }
             catch (IOException e) {
-                print("exception " + e.toString());
+                print(e.toString());
             }
         }
         catch (Exception e)
