@@ -61,7 +61,7 @@ public class AppCommand extends AbstractShellCommand {
             public void event(LinkEvent event) {
                 if (event.type() != null) {
                     try {
-                        Thread.sleep(10);
+
                         int x, y=0, rulesbefore=0, rulesafter=0, rulesadded=0;
                         DeviceService deviceService = get(DeviceService.class);
                         TopologyService topologyService = get(TopologyService.class);
@@ -195,6 +195,7 @@ public class AppCommand extends AbstractShellCommand {
                                 "######################### MIN MIN CUT    #######################################"+"\n");
                             int i = 0;
                             result = graph1.minCut(adjmatrix, s, t);
+                            HashMap<Integer, Integer> finalnodeddistance = new HashMap();
                             while (result[i] != null) {
                                 String sub = result[i];
                                 printout = printout.concat(result[i]+"\n");
@@ -204,16 +205,18 @@ public class AppCommand extends AbstractShellCommand {
                                 int dist1 = nodedistance.get(node1); //get node 1 distance
                                 int dist2 = nodedistance.get(node2); //get node 2 distance
                                 if (dist1 < dist2) {
-                                    nodedistance.remove(node2);
+                                    //nodedistance.remove(node2);
+                                    finalnodeddistance.put(node1,dist1);
                                 } else if (dist1 > dist2) {
-                                    nodedistance.remove(node1);
+                                    //nodedistance.remove(node1);
+                                    finalnodeddistance.put(node2,dist2);
                                 }
                                 i++;
                             }
-                            Set finalset = nodedistance.keySet();
-                            Iterator nodedistanceiterator = finalset.iterator();
-                            while (nodedistanceiterator.hasNext()) {
-                                Object obj = nodedistanceiterator.next();
+                            Set finalset = finalnodeddistance.keySet();
+                            Iterator finalnodedistanceiterator = finalset.iterator();
+                            while (finalnodedistanceiterator.hasNext()) {
+                                Object obj = finalnodedistanceiterator.next();
                                 Integer finalcutint = Integer.valueOf(obj.toString());
                                 String finalcutnode = idtonum2.get(finalcutint);
                                 printout = printout.concat(" final cut node: " + finalcutnode+"\n");
@@ -551,8 +554,8 @@ public class AppCommand extends AbstractShellCommand {
         }
         print("######################### MIN MIN CUT    #######################################");
         printout=printout.concat("######################### MIN MIN CUT    #######################################"+"\n");
-        try {
             result = graph1.minCut(adjmatrix, s, t);
+            HashMap<Integer,Integer> finalnodeddistance = new HashMap<>();
             int i = 0;
             while (result[i] != null) {
                 String sub = result[i];
@@ -564,24 +567,23 @@ public class AppCommand extends AbstractShellCommand {
                 int dist1 = nodedistance.get(node1); //get node 1 distance
                 int dist2 = nodedistance.get(node2); //get node 2 distance
                 if (dist1 < dist2) {
-                    nodedistance.remove(node2);
+                    //nodedistance.remove(node2);
+                    finalnodeddistance.put(node1,dist1);
                 } else if (dist1 > dist2) {
-                    nodedistance.remove(node1);
+                    //nodedistance.remove(node1);
+                    finalnodeddistance.put(node2,dist2);
                 }
                 i++;
             }
-            Set finalset = nodedistance.keySet();
-            Iterator nodedistanceiterator = finalset.iterator();
-            while (nodedistanceiterator.hasNext()) {
-                Object obj = nodedistanceiterator.next();
+            Set finalset = finalnodeddistance.keySet();
+            Iterator finalnodedistanceiterator = finalset.iterator();
+            while (finalnodedistanceiterator.hasNext()) {
+                Object obj = finalnodedistanceiterator.next();
                 Integer finalcutint = Integer.valueOf(obj.toString());
                 String finalcutnode = idtonum2.get(finalcutint);
                 print(" final cut node: " + finalcutnode);
                 printout=printout.concat(" final cut node: " + finalcutnode+"\n");
             }
-        } catch (Exception e){
-            print(e.toString());
-        }
         print("######################### ACL/FLOW RULES #######################################");
         printout=printout.concat(
                 "######################### ACL/FLOW RULES #######################################"+"\n");
