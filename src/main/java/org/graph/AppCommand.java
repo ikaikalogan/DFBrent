@@ -412,13 +412,15 @@ public class AppCommand extends AbstractShellCommand {
                                 String rules = "";
                                 ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
                                 Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
+                                Integer counted = 1;
                                 for(Object s: iterable){
-                                    rules = rules.concat("Rule: " + s.toString() + " |");
+                                    rules = rules.concat(" | Rule " + counted + " : " + s.toString() + " |");
+                                    counted = counted + 1;
                                 }
                                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
                                 FileWriter fileWriter = new FileWriter("/home/brent/topologychange/linkchangeDETECTEDRESULTS"+fileName+".txt");
                                 fileWriter.write(fileName + " | rules created : " + rulescreated +
-                                        " | Rules requested : " + rulesrequested + " Rules added: " + rules );
+                                        " | Rules requested : " + rulesrequested + "| Rules added: " + rules );
                                 fileWriter.close();
                             }
                             catch (IOException e) {
@@ -854,7 +856,7 @@ public class AppCommand extends AbstractShellCommand {
                 Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
                 Integer counter = 1;
                 for(Object s: iterable){
-                    rules = rules.concat("Rule " + counter + " :" + s.toString() + " | ");
+                    rules = rules.concat("| Rule " + counter + " :" + s.toString() + " | ");
                     counter = counter + 1;
                 }
                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
