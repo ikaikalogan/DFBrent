@@ -27,19 +27,21 @@ import org.onosproject.net.DeviceId;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.*;
 import org.onosproject.net.topology.*;
-import org.slf4j.Logger;
 
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.slf4j.LoggerFactory.getLogger;
 /**
  * Apache Karaf CLI command to determine the edge cut b/w 2 nodes and deploy ACLs
  */
 
 @Command(scope = "onos", name = "kill",
-         description = "Deploy Access Control Lists to Network Edge Cut Set")
+         description = "Deploy Flow Rules to Min Min Edge Cut Set")
 
 public class AppCommand extends AbstractShellCommand {
 
@@ -49,23 +51,75 @@ public class AppCommand extends AbstractShellCommand {
     private int t = -1;
     @Argument(index = 2, name = "r" , description = "# of rules", required = true, multiValued = false)
     private int r = 1;
-    private final Logger logger = getLogger(getClass());
+
     @Override
     public void execute() {
         //instantiate variables for s-t cut
         log.info("Graph Application: Started with min cut between " + s + " and " + t);
-        int x, y=0, rulesbefore=0, rulesafter=0;
-
-
+        int x, y=0, rulesbefore=0, rulesafter=0, rulesadded=0;
         //activate ONOS services for getting device and topology information
         DeviceService deviceService = get(DeviceService.class);
         TopologyService topologyService = get(TopologyService.class);
-
         // grab the current topology and graph
         Topology topo = topologyService.currentTopology();
+        //ListenerRegistry listenerRegistry = get(ListenerRegistry.class);
         // add a listener for topology events
+        TopologyListener tl = new TopologyListener() {
+            @Override
+            public void event(TopologyEvent event) {
+                if(event.type() == TopologyEvent.Type.TOPOLOGY_CHANGED){
 
+                    Integer presult=null , counter = 0 , limit = 20;
+                    String[] output = new String[20];
+                    try{
+                        String[] mycommand = new String[]{"sh onos kill "+s + " "+ t + " " + r};
+                        Process p = Runtime.getRuntime().exec(mycommand);
+                        presult = p.waitFor();
 
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                        String readline;
+                        while ((readline = reader.readLine()) != null & counter < limit ){
+                            output[counter] = (readline);
+                            counter = counter + 1;
+                        }
+                        p.destroy();
+                        reader.close();
+
+                    } catch (Exception e){
+                        log.info("Exception " + e.toString());
+                        try{
+                            String notification = e.toString();
+                            FileWriter fileWriter = new FileWriter(
+                                    "/home/brent/onostopologychange/topologychangedexception.txt");
+                            fileWriter.write(notification);
+                            fileWriter.close();
+                        }
+                        catch (IOException i){
+
+                        }
+                    }
+
+                    try {
+                        String date = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+                        String notification = "1" + event.toString()
+                                + " event time" + event.time()
+                                + " CPU time : " + date
+                                + " process exit code: " + presult
+                                + " output " + Arrays.toString(output);
+                        String fileName = "topologyinfo";
+                        FileWriter fileWriter = new FileWriter(
+                                "/home/brent/onostopologychange/"+fileName +".txt");
+                        fileWriter.write(notification);
+                        fileWriter.close();
+                    }
+                    catch (IOException e){
+                      log.info("caught exception " + e.toString());
+                    }
+                }
+            }
+        };
+        topologyService.addListener(tl);
+        //listenerRegistry.addListener(tl);
         TopologyGraph graph = topologyService.getGraph(topo);
         // grab the edges and nodes (vertexes) for building an adjacency matrix and building hashmaps
         Set<TopologyEdge> edges = graph.getEdges(); //grab the edges from current topology
@@ -75,7 +129,6 @@ public class AppCommand extends AbstractShellCommand {
         HashMap<Integer,String> idtonum2 = new HashMap<>();//for rules
         HashMap<DeviceId, List> idtostats = new HashMap<>(); //device id to edges
         HashMap<DeviceId, List> idtoports = new HashMap<>(); // devices and their associated ports
-
         //Weigher for link topology
         DefaultEdgeWeigher edgeWeigher = new DefaultEdgeWeigher();
         //Flow Rule Instantiations
@@ -114,22 +167,7 @@ public class AppCommand extends AbstractShellCommand {
             print("Device id: " + entry.getKey() + " ; matrix number : " + entry.getValue());
         }
 
-        //print("###########################  idtoports KEYS    ###########################################");
-        //idtoports.forEach((k,v) -> print("Key = " + String.valueOf(k) + ", Value = " + String.valueOf(v)));
-        //for (DeviceId deviceId : idtoports.keySet()){
-        //    print("Key " + String.valueOf(deviceId));
-        //    print("------------------------------------------------------------------------------");
-        //}
-        //print("###########################  ID TO PORT VALUES   ###########################################");
-        //for (List list : idtoports.values()) {
-        //    print("value " + String.valueOf(list));
-        //    print("------------------------------------------------------------------------------");
-        //}
-        //print("########################### PORT STATS #########################################");
-        //for (List stats : idtostats.values() ){
-        //    print("stats :" + stats.toString());
-        //}
-        print("###########################   WEIGHTS  #########################################");
+        //print("###########################   WEIGHTS  #########################################");
 
         for (TopologyEdge edgetemp: edges) {
 
@@ -176,7 +214,7 @@ public class AppCommand extends AbstractShellCommand {
                 }
             }
         }
-        /*print("##########################    MATRIX    ########################################");
+        print("##########################    MATRIX    ########################################");
 
         for (int i=0; i<devicenum;i++){
             print ("Row " + i + "-------------------------------------------------------- Row " + i);
@@ -184,7 +222,7 @@ public class AppCommand extends AbstractShellCommand {
                 print(String.valueOf(adjmatrix[i][j]));
             }
         }
-        */
+
         print("######################### SHORTEST PATHS #######################################");
         ShortestPath shorty = new ShortestPath(devicenum);
         int origin = s;
@@ -339,12 +377,12 @@ public class AppCommand extends AbstractShellCommand {
                 Integer finaleint = Integer.valueOf(finalobj.toString());
                 int octetmax = 255;
                 int hostmax = 254;
-                int fourthoctet = 2;
+                int fourthoctet = 4;
                 int thirdoctect = 0;
                 int maxrules = r;
                 int addedrules = 0;
                 //int loops = 0;
-                int thirdoctectloop = ((r+2)/octetmax);
+                int thirdoctectloop = ((r+4)/octetmax);
                 //iterate over the number of rules
                 for( int j = 0; j < thirdoctectloop + 1 ; j++) {
                     if (addedrules == maxrules){
@@ -359,6 +397,7 @@ public class AppCommand extends AbstractShellCommand {
                     while(fourthoctet%octetmax < hostmax) {
                         if (addedrules == maxrules){
                             print("added rules: " + addedrules);
+                            rulesadded = addedrules;
                             break;
                             //dont do anymore if == total rules
                         }
@@ -415,6 +454,19 @@ public class AppCommand extends AbstractShellCommand {
             }
             rulesafter = flowRuleService.getFlowRuleCount();
             print("Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter);
+            print("#############################Printing Results###############################");
+            try{
+                String rulescreated = String.valueOf(rulesadded);
+                String rulesrequested = String.valueOf(r);
+                String fileName = new SimpleDateFormat("yyyyMMddHHmm'.txt'").format(new Date());
+                FileWriter fileWriter = new FileWriter("/home/brent/captures/outcome"+fileName+".txt");
+                fileWriter.write("rules created : " + rulescreated +
+                        " | Rules requested : " + rulesrequested );
+                fileWriter.close();
+            }
+            catch (IOException e) {
+                log.info("exception " + e.toString());
+            }
         }
         catch (Exception e)
         {
