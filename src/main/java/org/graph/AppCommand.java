@@ -20,6 +20,7 @@ import org.apache.karaf.shell.commands.Command;
 import org.onlab.graph.DefaultEdgeWeigher;
 import org.onlab.graph.Weight;
 import org.onlab.packet.Ip4Prefix;
+import org.onlab.packet.VlanId;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.DefaultApplicationId;
@@ -31,6 +32,8 @@ import org.onosproject.net.link.LinkListener;
 import org.onosproject.net.link.LinkService;
 import org.onosproject.net.topology.*;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -48,9 +51,9 @@ public class AppCommand extends AbstractShellCommand {
 
     @Argument(index = 0, name = "s", description = "source", required = true, multiValued = false)
     private int s = -1;
-    @Argument(index = 1, name = "t"  , description = "destination", required = true, multiValued = false)
+    @Argument(index = 1, name = "t", description = "destination", required = true, multiValued = false)
     private int t = -1;
-    @Argument(index = 2, name = "r" , description = "# of rules", required = true, multiValued = false)
+    @Argument(index = 2, name = "r", description = "# of rules", required = false, multiValued = false)
     private int r = 1;
 
     @Override
@@ -62,7 +65,7 @@ public class AppCommand extends AbstractShellCommand {
                 if (event.type() != null) {
                     try {
 
-                        int x, y=0, rulesbefore=0, rulesafter=0, rulesadded=0;
+                        int x, y = 0, rulesbefore = 0, rulesafter = 0, rulesadded = 0;
                         DeviceService deviceService = get(DeviceService.class);
                         TopologyService topologyService = get(TopologyService.class);
                         Topology topo = topologyService.currentTopology();
@@ -70,7 +73,7 @@ public class AppCommand extends AbstractShellCommand {
                         Set<TopologyEdge> edges = graph.getEdges(); //grab the edges from current topology
                         Set<TopologyVertex> vertexes = graph.getVertexes(); // grab the vertexes from the current topologyon
                         HashMap<DeviceId, Integer> idtonum = new HashMap<>();// deviceid to int
-                        HashMap<Integer,String> idtonum2 = new HashMap<>();//for rules
+                        HashMap<Integer, String> idtonum2 = new HashMap<>();//for rules
                         HashMap<DeviceId, List> idtostats = new HashMap<>(); //device id to edges
                         HashMap<DeviceId, List> idtoports = new HashMap<>(); // devices and their associated ports
                         DefaultEdgeWeigher edgeWeigher = new DefaultEdgeWeigher();
@@ -80,57 +83,57 @@ public class AppCommand extends AbstractShellCommand {
                         DeviceId[] idlist = new DeviceId[devicenum];
                         Graph graph1 = new Graph(devicenum);
                         String[] result;
-                        String printout= "";
+                        String printout = "";
 
-                        for (TopologyVertex temp1: vertexes){
+                        for (TopologyVertex temp1 : vertexes) {
                             String name = String.valueOf(temp1);
                             DeviceId id = temp1.deviceId();
-                            idtonum.put(id,y);
-                            idtonum2.put(y,name);
+                            idtonum.put(id, y);
+                            idtonum2.put(y, name);
                             idlist[y] = id;
                             List ports = deviceService.getPorts(id);
                             List stats = deviceService.getPortStatistics(id);
-                            idtostats.put(id,stats);
-                            idtoports.put(id,ports);
+                            idtostats.put(id, stats);
+                            idtoports.put(id, ports);
                             y++;
                         }
                         String linkchangetype = event.type().toString();
                         String linkchangename = event.type().name();
-                        printout = printout.concat(" EVENT " + linkchangetype + "\n" + "NAME" + linkchangename +"\n");
+                        printout = printout.concat(" EVENT " + linkchangetype + "\n" + "NAME" + linkchangename + "\n");
                         printout = printout.concat(
-                                "########################## device id to matrix number ##########################"+"\n");
+                                "########################## device id to matrix number ##########################" + "\n");
                         Set set = idtonum.entrySet();
                         Iterator iterator = set.iterator();
-                        while(iterator.hasNext()){
-                            Map.Entry entry = (Map.Entry)iterator.next();
+                        while (iterator.hasNext()) {
+                            Map.Entry entry = (Map.Entry) iterator.next();
                             printout = printout.concat("Device id: " + entry.getKey() + " ; matrix number : " + entry.getValue() + "\n");
                         }
                         printout = printout.concat(
-                                "###########################   WEIGHTS  #########################################"+"\n");
-                        for (TopologyEdge edgetemp: edges) {
+                                "###########################   WEIGHTS  #########################################" + "\n");
+                        for (TopologyEdge edgetemp : edges) {
                             for (int j = 0; j < devicenum; j++) {
                                 String edge = String.valueOf(edgetemp);
                                 String src = null;
                                 String dst = null;
-                                String pattern ="((of:)(\\d)*)";
+                                String pattern = "((of:)(\\d)*)";
                                 Pattern p = Pattern.compile(pattern);
                                 Matcher matcher = p.matcher(edge);
-                                if(matcher.find()) {
+                                if (matcher.find()) {
                                     src = matcher.group(0);
                                 }
-                                if( matcher.find(44)){
+                                if (matcher.find(44)) {
                                     dst = matcher.group(0);
                                 }
                                 DeviceId source = DeviceId.deviceId(src);
                                 DeviceId destination = DeviceId.deviceId(dst);
                                 DeviceId id = idlist[j];
-                                if (id.equals(source)){
+                                if (id.equals(source)) {
                                     int row = idtonum.get(id);
                                     int column = idtonum.get(destination);
                                     Weight weight = edgeWeigher.weight(edgetemp);
                                     String stringweight = String.valueOf(weight);
                                     int lastindex = stringweight.lastIndexOf('}');
-                                    String sw = stringweight.substring(19,lastindex);
+                                    String sw = stringweight.substring(19, lastindex);
 
                                     float floatweight = Float.valueOf(sw);
                                     int intweight = Math.round(floatweight);
@@ -140,27 +143,27 @@ public class AppCommand extends AbstractShellCommand {
                             }
                         }
                         printout = printout.concat(
-                                "##########################    MATRIX    ########################################"+"\n");
-                        for (int i=0; i<devicenum;i++){
-                            printout = printout.concat (
-                                    "Row " + i + "-------------------------------------------------------- Row " + i+"\n");
-                            for(int j = 0; j <devicenum; j++){
+                                "##########################    MATRIX    ########################################" + "\n");
+                        for (int i = 0; i < devicenum; i++) {
+                            printout = printout.concat(
+                                    "Row " + i + "-------------------------------------------------------- Row " + i + "\n");
+                            for (int j = 0; j < devicenum; j++) {
                                 printout = printout.concat(adjmatrix[i][j] + "\n");
                             }
                         }
                         printout = printout.concat(
-                                "######################### SHORTEST PATHS #######################################"+"\n");
+                                "######################### SHORTEST PATHS #######################################" + "\n");
                         ShortestPath shorty = new ShortestPath(devicenum);
                         int origin = s;
                         int[] shortydijkstra = shorty.dijkstra(adjmatrix, origin);
                         printout = printout.concat("Vertex   Distance from Source");
                         for (int i = 0; i < devicenum; i++) {
-                            printout = printout.concat(i + "                 " + shortydijkstra[i]+"\n");
+                            printout = printout.concat(i + "                 " + shortydijkstra[i] + "\n");
                         }
                         printout = printout.concat(
-                                "##########################      CUT     ########################################"+"\n");
+                                "##########################      CUT     ########################################" + "\n");
                         Vector devicelist = new Vector();
-                        HashMap<Integer,Integer> nodedistance = new HashMap(); //Key:node Value: Distance from source
+                        HashMap<Integer, Integer> nodedistance = new HashMap(); //Key:node Value: Distance from source
                         if ((s != -1) && (t != -1)) {
                             result = graph1.minCut(adjmatrix, s, t);
                             x = result.length;
@@ -173,14 +176,14 @@ public class AppCommand extends AbstractShellCommand {
                                     int device0 = Integer.parseInt(subtwo[0]);
                                     devicelist.add(y, (device0));
                                     int distance0 = shortydijkstra[device0];
-                                    nodedistance.put(device0,distance0);
+                                    nodedistance.put(device0, distance0);
                                     y++;
                                     int device1 = Integer.parseInt(subtwo[1]);
                                     devicelist.add(y, (device1));
                                     int distance1 = shortydijkstra[device1];
-                                    nodedistance.put(device1,distance1);
+                                    nodedistance.put(device1, distance1);
                                     y++;
-                                    printout = printout.concat(result[i] +"\n");
+                                    printout = printout.concat(result[i] + "\n");
                                 }
                             }
                         }
@@ -189,150 +192,196 @@ public class AppCommand extends AbstractShellCommand {
                             Object tempobject = devicelist.get(i);
                             String tempstring = tempobject.toString();
                             int tempint = Integer.valueOf(tempstring);
-                            printout = printout.concat(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint+"\n");
+                            printout = printout.concat(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint + "\n");
                         }
                         printout = printout.concat(
-                                "######################### MIN MIN CUT    #######################################"+"\n");
-                            int i = 0;
-                            result = graph1.minCut(adjmatrix, s, t);
-                            HashMap<Integer, Integer> finalnodeddistance = new HashMap();
-                            while (result[i] != null) {
-                                String sub = result[i];
-                                printout = printout.concat(result[i]+"\n");
-                                String[] edgenodes = sub.split("-");
-                                int node1 = Integer.parseInt(edgenodes[0]);
-                                int node2 = Integer.parseInt(edgenodes[1]);
-                                int dist1 = nodedistance.get(node1); //get node 1 distance
-                                int dist2 = nodedistance.get(node2); //get node 2 distance
-                                if (dist1 < dist2) {
-                                    //nodedistance.remove(node2);
-                                    finalnodeddistance.put(node1,dist1);
-                                } else if (dist1 > dist2) {
-                                    //nodedistance.remove(node1);
-                                    finalnodeddistance.put(node2,dist2);
-                                } else if (dist1 == dist2){
-                                    finalnodeddistance.put(node1,dist1);
-                                    finalnodeddistance.put(node2,dist2);
-                                }
-                                i++;
+                                "######################### MIN MIN CUT    #######################################" + "\n");
+                        int i = 0;
+                        result = graph1.minCut(adjmatrix, s, t);
+                        HashMap<Integer, Integer> finalnodeddistance = new HashMap();
+                        while (result[i] != null) {
+                            String sub = result[i];
+                            printout = printout.concat(result[i] + "\n");
+                            String[] edgenodes = sub.split("-");
+                            int node1 = Integer.parseInt(edgenodes[0]);
+                            int node2 = Integer.parseInt(edgenodes[1]);
+                            int dist1 = nodedistance.get(node1); //get node 1 distance
+                            int dist2 = nodedistance.get(node2); //get node 2 distance
+                            if (dist1 < dist2) {
+                                //nodedistance.remove(node2);
+                                finalnodeddistance.put(node1, dist1);
+                            } else if (dist1 > dist2) {
+                                //nodedistance.remove(node1);
+                                finalnodeddistance.put(node2, dist2);
+                            } else if (dist1 == dist2) {
+                                finalnodeddistance.put(node1, dist1);
+                                finalnodeddistance.put(node2, dist2);
                             }
-                            Set finalset = finalnodeddistance.keySet();
-                            Iterator finalnodedistanceiterator = finalset.iterator();
-                            while (finalnodedistanceiterator.hasNext()) {
-                                Object obj = finalnodedistanceiterator.next();
-                                Integer finalcutint = Integer.valueOf(obj.toString());
-                                String finalcutnode = idtonum2.get(finalcutint);
-                                printout = printout.concat(" final cut node: " + finalcutnode+"\n");
-                            }
+                            i++;
+                        }
+                        Set finalset = finalnodeddistance.keySet();
+                        Iterator finalnodedistanceiterator = finalset.iterator();
+                        while (finalnodedistanceiterator.hasNext()) {
+                            Object obj = finalnodedistanceiterator.next();
+                            Integer finalcutint = Integer.valueOf(obj.toString());
+                            String finalcutnode = idtonum2.get(finalcutint);
+                            printout = printout.concat(" final cut node: " + finalcutnode + "\n");
+                        }
                         printout = printout.concat(
-                                "######################### ACL/FLOW RULES #######################################"+"\n");
+                                "######################### ACL/FLOW RULES #######################################" + "\n");
+                        // get rid of duplicates in the list
                         try {
                             final DefaultFlowRule.Builder flowrulebuilder = DefaultFlowRule.builder();
-                            printout = printout.concat("The total number of flow rules is : "+"\n");
+
+                            print("The total number of flow rules is : ");
+                            printout = printout.concat("The total number of flow rules is : ");
                             rulesbefore = flowRuleService.getFlowRuleCount();
-                            printout = printout.concat(rulesbefore +"\n");
+                            print(String.valueOf(rulesbefore));
+                            printout = printout.concat(rulesbefore + "\n");
+
+                            print("######################Reading Input Rules#################################");
+                            printout = printout.concat("######################Reading Input Rules#################################" + "\n");
+
                             Set finale = finalnodeddistance.keySet();
                             Iterator finaleiterator = finale.iterator();
-                            while(finaleiterator.hasNext()){
+
+
+                            while (finaleiterator.hasNext()) {
                                 // create # of rules equal to the # in r
                                 Object finalobj = finaleiterator.next();
                                 Integer finaleint = Integer.valueOf(finalobj.toString());
-                                int octetmax = 255;
-                                int hostmax = 254;
-                                int fourthoctet = 4;
-                                int thirdoctect = 0;
-                                int maxrules = r;
-                                int addedrules = 0;
-                                int thirdoctectloop = ((r+4)/octetmax);
-                                //iterate over the number of rules
-                                for( int j = 0; j < thirdoctectloop + 1 ; j++) {
-                                    if (addedrules == maxrules){
-                                        printout = printout.concat("added rules: " + addedrules+"\n");
-                                        break;
-                                        //dont do anymore if == total rules
-                                    }
-                                    if(j != 0){
-                                        thirdoctect = thirdoctect + 1;
-                                    }
+                                BufferedReader bufferedReader = new BufferedReader
+                                        (new FileReader("/home/brent/inputrules/rules.txt"));
+                                String line;
+                                String rule;
+                                while ((line = bufferedReader.readLine()) != null) {
+                                    rule = line;
+                                    //print(rule);
+                                    String denypattern = "(\\w+_\\w+_?\\w+?)\\s(\\d+.\\d+.\\d+.\\d+)";
+                                    Pattern deny = Pattern.compile(denypattern);
+                                    Matcher denymatcher = deny.matcher(rule);
+                                    String denystring = "ip_deny";
+                                    String vlanstring = "vlan_id_change";
 
-                                    while(fourthoctet%octetmax < hostmax) {
-                                        if (addedrules == maxrules){
-                                            printout = printout.concat("added rules: " + addedrules+"\n");
-                                            rulesadded = addedrules;
-                                            break;
-                                            //dont do anymore if == total rules
+                                    if( denymatcher.find()){
+                                        if ((denymatcher.group(1).contains(denystring))){
+
+                                            String denyipaddress = denymatcher.group(2);
+                                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                                            //build rule one
+                                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                                            short type = 0x800;
+                                            int priority = 40000;
+                                            int timeout = 10000;
+
+                                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(denyipaddress + "/32");
+                                            printout = printout.concat("" + "\n");
+
+                                            String tempname = idtonum2.get(finaleint);
+                                            //print(" rule place onto " + tempname);
+                                            printout = printout.concat(" rule place onto " + tempname + "\n");
+                                            DeviceId deviceId = DeviceId.deviceId(tempname);
+                                            TrafficSelector selector = selectorbuilder.
+                                                    matchIPDst(ip4Prefixdst1).
+                                                    matchEthType(type).
+                                                    build();
+                                            TrafficTreatment treatment = treatmentbuilder.
+                                                    drop().
+                                                    build();
+                                            FlowRule rule1 = flowrulebuilder.
+                                                    withSelector(selector).
+                                                    withTreatment(treatment).
+                                                    makePermanent().
+                                                    forDevice(deviceId).
+                                                    fromApp(applicationId).
+                                                    withPriority(priority).
+                                                    withHardTimeout(timeout).
+                                                    build();
+
+                                            flowRuleService.applyFlowRules(rule1);
+                                            rulesadded = rulesadded +1;
                                         }
-                                        fourthoctet = (fourthoctet + 1) % (octetmax);
-                                        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-                                        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
-                                        ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                                        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-                                        short type = 0x800;
-                                        int priority = 40000;
-                                        int timeout = 10000;
-                                        String thirdoctetstring = String.valueOf(thirdoctect);
-                                        String fourthoctectstring = String.valueOf(fourthoctet);
-                                        Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
-                                        printout=printout.concat("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32"+"\n");
-                                        String tempname = idtonum2.get(finaleint);
-                                        printout = printout.concat(" rule place onto " + tempname+"\n");
-                                        DeviceId deviceId = DeviceId.deviceId(tempname);
-                                        TrafficSelector selector = selectorbuilder.
-                                                matchIPDst(ip4Prefixdst1).
-                                                matchEthType(type).
-                                                build();
-                                        TrafficTreatment treatment = treatmentbuilder.
-                                                drop().
-                                                build();
-                                        FlowRule rule1 = flowrulebuilder.
-                                                withSelector(selector).
-                                                withTreatment(treatment).
-                                                makePermanent().
-                                                forDevice(deviceId).
-                                                fromApp(applicationId).
-                                                withPriority(priority).
-                                                withHardTimeout(timeout).
-                                                build();
-                                        flowRuleService.applyFlowRules(rule1);
-                                        log.info(" Graph Application Rule Built for Device " + tempname);
-                                        addedrules = addedrules + 1;
+                                        else if (denymatcher.group(1).contains(vlanstring)){
+
+                                            String vlanipaddress = denymatcher.group(2);
+                                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                                            //build rule one
+                                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                                            short type = 0x800;
+                                            int priority = 40000;
+                                            int timeout = 10000;
+                                            short vlanconverto = 2;
+                                            VlanId vlanId = VlanId.vlanId(vlanconverto);
+
+                                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(vlanipaddress + "/32");
+                                            printout = printout.concat("" + "\n");
+
+                                            String tempname = idtonum2.get(finaleint);
+                                            //print(" rule place onto " + tempname);
+                                            printout = printout.concat(" rule place onto " + tempname + "\n");
+                                            DeviceId deviceId = DeviceId.deviceId(tempname);
+                                            TrafficSelector selector = selectorbuilder.
+                                                    matchIPDst(ip4Prefixdst1).
+                                                    matchEthType(type).
+                                                    build();
+                                            TrafficTreatment treatment = treatmentbuilder.
+                                                    setVlanId(vlanId)
+                                                    .build();
+                                            FlowRule rule1 = flowrulebuilder.
+                                                    withSelector(selector).
+                                                    withTreatment(treatment).
+                                                    makePermanent().
+                                                    forDevice(deviceId).
+                                                    fromApp(applicationId).
+                                                    withPriority(priority).
+                                                    withHardTimeout(timeout).
+                                                    build();
+
+                                            flowRuleService.applyFlowRules(rule1);
+                                            rulesadded = rulesadded + 1;
+                                        }
+
+                                    } else {
+                                        print("no bueno");
                                     }
-                                    //loops = loops +1;
-                                    fourthoctet = 0;
                                 }
                             }
+
                             rulesafter = flowRuleService.getFlowRuleCount();
-                            printout =printout.concat(
-                                    "Original Rulecount =  " + rulesbefore + "\n"+ " Rulecount After = " + rulesafter+"\n");
-                            printout=printout.concat(
-                                    "#############################Printing Results###############################"+"\n");
-                            try{
+                            print("Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
+                                    + " Rules Added #  " + rulesadded);
+                            printout = printout.concat(
+                                    "Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
+                                            + "Rules Added #  " + rulesadded + "\n");
+                             print("#############################Printing Results###############################" + "\n");
+                            try {
                                 String rulescreated = String.valueOf(rulesadded);
                                 String rulesrequested = String.valueOf(r);
                                 String rules = "";
                                 ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
                                 Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
                                 Integer counted = 1;
-                                for(Object s: iterable){
+                                for (Object s : iterable) {
                                     rules = rules.concat(" Rule " + counted + " : " + s.toString() + "\n");
                                     counted = counted + 1;
                                 }
                                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
-                                FileWriter fileWriter = new FileWriter("/home/brent/onostopologychange/LINK_CHANGE_DETECTEDRESULTS"+fileName+".txt");
-                                fileWriter.write(fileName + "Rules created : " + rulescreated + "\n"+
-                                        "Rules requested : " + rulesrequested + "\n"+ "Rules added: " + rules +"\n" + printout );
+                                FileWriter fileWriter = new FileWriter("/home/brent/onostopologychange/LINK_CHANGE_DETECTEDRESULTS" + fileName + ".txt");
+                                fileWriter.write(fileName + "Rules created : " + rulescreated + "\n" +
+                                        "Rules requested : " + rulesrequested + "\n" + "Rules added: " + rules + "\n" + printout);
                                 fileWriter.close();
-                            }
-                            catch (IOException e) {
+                            } catch (IOException e) {
                                 String notification = e.toString();
                                 FileWriter fileWriter = new FileWriter(
                                         "/home/brent/onostopologychange/topologychangedexception1.txt");
                                 fileWriter.write(notification);
                                 fileWriter.close();
                             }
-                        }
-                        catch (Exception e)
-                        {
+                        } catch (Exception e) {
                             String notification = e.toString();
                             FileWriter fileWriter = new FileWriter(
                                     "/home/brent/onostopologychange/topologychangedexception2.txt");
@@ -412,7 +461,7 @@ public class AppCommand extends AbstractShellCommand {
         //topologyService.addListener(topologyListener);
         LinkService linkService = get(LinkService.class);
         linkService.addListener(linkListener);
-        int x, y=0, rulesbefore=0, rulesafter=0, rulesadded=0;
+        int x, y = 0, rulesbefore = 0, rulesafter = 0, rulesadded = 0;
         DeviceService deviceService = get(DeviceService.class);
         TopologyService topologyService = get(TopologyService.class);
         Topology topo = topologyService.currentTopology();
@@ -421,7 +470,7 @@ public class AppCommand extends AbstractShellCommand {
         Set<TopologyEdge> edges = graph.getEdges(); //grab the edges from current topology
         Set<TopologyVertex> vertexes = graph.getVertexes(); // grab the vertexes from the current topologyon
         HashMap<DeviceId, Integer> idtonum = new HashMap<>();// deviceid to int
-        HashMap<Integer,String> idtonum2 = new HashMap<>();//for rules
+        HashMap<Integer, String> idtonum2 = new HashMap<>();//for rules
         HashMap<DeviceId, List> idtostats = new HashMap<>(); //device id to edges
         HashMap<DeviceId, List> idtoports = new HashMap<>(); // devices and their associated ports
         DefaultEdgeWeigher edgeWeigher = new DefaultEdgeWeigher();
@@ -431,60 +480,60 @@ public class AppCommand extends AbstractShellCommand {
         DeviceId[] idlist = new DeviceId[devicenum];
         Graph graph1 = new Graph(devicenum);
         String[] result;
-        String printout= "";
+        String printout = "";
 
-        for (TopologyVertex temp1: vertexes){
+        for (TopologyVertex temp1 : vertexes) {
             String name = String.valueOf(temp1);
             DeviceId id = temp1.deviceId();
-            idtonum.put(id,y);
-            idtonum2.put(y,name);
+            idtonum.put(id, y);
+            idtonum2.put(y, name);
             idlist[y] = id;
             List ports = deviceService.getPorts(id);
             List stats = deviceService.getPortStatistics(id);
-            idtostats.put(id,stats);
-            idtoports.put(id,ports);
+            idtostats.put(id, stats);
+            idtoports.put(id, ports);
             y++;
         }
         print("########################## device id to matrix number ##########################");
         printout = printout.concat(
-                "########################## device id to matrix number ##########################"+"\n");
+                "########################## device id to matrix number ##########################" + "\n");
         //get a set of entries
         Set set = idtonum.entrySet();
         //get an iterator
         Iterator iterator = set.iterator();
-        while(iterator.hasNext()){
-            Map.Entry entry = (Map.Entry)iterator.next();
+        while (iterator.hasNext()) {
+            Map.Entry entry = (Map.Entry) iterator.next();
             print("Device id: " + entry.getKey() + " ; matrix number : " + entry.getValue());
-            printout = printout.concat("Device id: " + entry.getKey() + " ; matrix number : " + entry.getValue()+"\n");
+            printout = printout.concat("Device id: " + entry.getKey() + " ; matrix number : " + entry.getValue() + "\n");
         }
         print("###########################   WEIGHTS  #########################################");
         printout = printout.concat(
-                "###########################   WEIGHTS  #########################################"+"\n");
-        for (TopologyEdge edgetemp: edges) {
+                "###########################   WEIGHTS  #########################################" + "\n");
+        for (TopologyEdge edgetemp : edges) {
             for (int j = 0; j < devicenum; j++) {
                 //DefaultTopologyEdge{src=of:0000000000000001, dst=of:0000000000000002}
                 String edge = String.valueOf(edgetemp);
                 String src = null;
                 String dst = null;
-                String pattern ="((of:)(\\d)*)";
+                String pattern = "((of:)(\\d)*)";
                 Pattern p = Pattern.compile(pattern);
                 Matcher matcher = p.matcher(edge);
-                if(matcher.find()) {
+                if (matcher.find()) {
                     src = matcher.group(0);
                 }
-                if( matcher.find(44)){
+                if (matcher.find(44)) {
                     dst = matcher.group(0);
                 }
                 DeviceId source = DeviceId.deviceId(src);
                 DeviceId destination = DeviceId.deviceId(dst);
                 DeviceId id = idlist[j];
-                if (id.equals(source)){
+                if (id.equals(source)) {
                     int row = idtonum.get(id);
                     int column = idtonum.get(destination);
                     Weight weight = edgeWeigher.weight(edgetemp);
                     String stringweight = String.valueOf(weight);
                     int lastindex = stringweight.lastIndexOf('}');
-                    String sw = stringweight.substring(19,lastindex);
+                    String sw = stringweight.substring(19, lastindex);
                     float floatweight = Float.valueOf(sw);
                     int intweight = Math.round(floatweight);
                     adjmatrix[row][column] = intweight;
@@ -494,33 +543,33 @@ public class AppCommand extends AbstractShellCommand {
         }
         print("##########################    MATRIX    ########################################");
         printout = printout.concat(
-                "##########################    MATRIX    ########################################"+"\n");
-        for (int i=0; i<devicenum;i++){
-            print ("Row " + i + "-------------------------------------------------------- Row " + i);
+                "##########################    MATRIX    ########################################" + "\n");
+        for (int i = 0; i < devicenum; i++) {
+            print("Row " + i + "-------------------------------------------------------- Row " + i);
             printout = printout.concat(
-                    "Row " + i + "-------------------------------------------------------- Row " + i+"\n");
-            for(int j = 0; j <devicenum; j++){
+                    "Row " + i + "-------------------------------------------------------- Row " + i + "\n");
+            for (int j = 0; j < devicenum; j++) {
                 print(String.valueOf(adjmatrix[i][j]));
-                printout = printout.concat(adjmatrix[i][j] +"\n");
+                printout = printout.concat(adjmatrix[i][j] + "\n");
             }
         }
         print("######################### SHORTEST PATHS #######################################");
         printout = printout.concat(
-                "######################### SHORTEST PATHS #######################################"+"\n");
+                "######################### SHORTEST PATHS #######################################" + "\n");
         ShortestPath shorty = new ShortestPath(devicenum);
         int origin = s;
         int[] shortydijkstra = shorty.dijkstra(adjmatrix, origin);
         print("Vertex   Distance from Source");
-        printout = printout.concat("Vertex   Distance from Source"+"\n");
+        printout = printout.concat("Vertex   Distance from Source" + "\n");
         for (int i = 0; i < devicenum; i++) {
             print(i + "                 " + shortydijkstra[i]);
-            printout = printout.concat(i + "                 " + shortydijkstra[i]+"\n");
+            printout = printout.concat(i + "                 " + shortydijkstra[i] + "\n");
         }
         print("##########################      CUT     ########################################");
-        printout=printout.concat(
-                "##########################      CUT     ########################################"+"\n");
+        printout = printout.concat(
+                "##########################      CUT     ########################################" + "\n");
         Vector devicelist = new Vector();
-        HashMap<Integer,Integer> nodedistance = new HashMap(); //Key:node Value: Distance from source
+        HashMap<Integer, Integer> nodedistance = new HashMap(); //Key:node Value: Distance from source
         if ((s != -1) && (t != -1)) {
             result = graph1.minCut(adjmatrix, s, t);
             x = result.length;
@@ -533,15 +582,15 @@ public class AppCommand extends AbstractShellCommand {
                     int device0 = Integer.parseInt(subtwo[0]);
                     devicelist.add(y, (device0));
                     int distance0 = shortydijkstra[device0];
-                    nodedistance.put(device0,distance0);
+                    nodedistance.put(device0, distance0);
                     y++;
                     int device1 = Integer.parseInt(subtwo[1]);
                     devicelist.add(y, (device1));
                     int distance1 = shortydijkstra[device1];
-                    nodedistance.put(device1,distance1);
+                    nodedistance.put(device1, distance1);
                     y++;
                     print(String.valueOf(result[i]));
-                    printout = printout.concat(result[i] +"\n");
+                    printout = printout.concat(result[i] + "\n");
 
                 }
             }
@@ -553,46 +602,46 @@ public class AppCommand extends AbstractShellCommand {
             int tempint = Integer.valueOf(tempstring);
             //intarray[i] = tempint;
             print(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint);
-            printout=printout.concat(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint+"\n");
+            printout = printout.concat(" Device ID: " + idtonum2.get(tempint) + "  Matrix id: " + tempint + "\n");
         }
         print("######################### MIN MIN CUT    #######################################");
-        printout=printout.concat("######################### MIN MIN CUT    #######################################"+"\n");
-            result = graph1.minCut(adjmatrix, s, t);
-            HashMap<Integer,Integer> finalnodeddistance = new HashMap<>();
-            int i = 0;
-            while (result[i] != null) {
-                String sub = result[i];
-                print(result[i]);
-                printout=printout.concat(result[i]+"\n");
-                String[] edgenodes = sub.split("-");
-                int node1 = Integer.parseInt(edgenodes[0]);
-                int node2 = Integer.parseInt(edgenodes[1]);
-                int dist1 = nodedistance.get(node1); //get node 1 distance
-                int dist2 = nodedistance.get(node2); //get node 2 distance
-                if (dist1 < dist2) {
-                    //nodedistance.remove(node2);
-                    finalnodeddistance.put(node1,dist1);
-                } else if (dist1 > dist2) {
-                    //nodedistance.remove(node1);
-                    finalnodeddistance.put(node2,dist2);
-                } else if (dist1 == dist2){
-                    finalnodeddistance.put(node1,dist1);
-                    finalnodeddistance.put(node2,dist2);
-                }
-                i++;
+        printout = printout.concat("######################### MIN MIN CUT    #######################################" + "\n");
+        result = graph1.minCut(adjmatrix, s, t);
+        HashMap<Integer, Integer> finalnodeddistance = new HashMap<>();
+        int i = 0;
+        while (result[i] != null) {
+            String sub = result[i];
+            print(result[i]);
+            printout = printout.concat(result[i] + "\n");
+            String[] edgenodes = sub.split("-");
+            int node1 = Integer.parseInt(edgenodes[0]);
+            int node2 = Integer.parseInt(edgenodes[1]);
+            int dist1 = nodedistance.get(node1); //get node 1 distance
+            int dist2 = nodedistance.get(node2); //get node 2 distance
+            if (dist1 < dist2) {
+                //nodedistance.remove(node2);
+                finalnodeddistance.put(node1, dist1);
+            } else if (dist1 > dist2) {
+                //nodedistance.remove(node1);
+                finalnodeddistance.put(node2, dist2);
+            } else if (dist1 == dist2) {
+                finalnodeddistance.put(node1, dist1);
+                finalnodeddistance.put(node2, dist2);
             }
-            Set finalset = finalnodeddistance.keySet();
-            Iterator finalnodedistanceiterator = finalset.iterator();
-            while (finalnodedistanceiterator.hasNext()) {
-                Object obj = finalnodedistanceiterator.next();
-                Integer finalcutint = Integer.valueOf(obj.toString());
-                String finalcutnode = idtonum2.get(finalcutint);
-                print(" final cut node: " + finalcutnode);
-                printout=printout.concat(" final cut node: " + finalcutnode+"\n");
-            }
+            i++;
+        }
+        Set finalset = finalnodeddistance.keySet();
+        Iterator finalnodedistanceiterator = finalset.iterator();
+        while (finalnodedistanceiterator.hasNext()) {
+            Object obj = finalnodedistanceiterator.next();
+            Integer finalcutint = Integer.valueOf(obj.toString());
+            String finalcutnode = idtonum2.get(finalcutint);
+            print(" final cut node: " + finalcutnode);
+            printout = printout.concat(" final cut node: " + finalcutnode + "\n");
+        }
         print("######################### ACL/FLOW RULES #######################################");
-        printout=printout.concat(
-                "######################### ACL/FLOW RULES #######################################"+"\n");
+        printout = printout.concat(
+                "######################### ACL/FLOW RULES #######################################" + "\n");
         // get rid of duplicates in the list
         try {
             final DefaultFlowRule.Builder flowrulebuilder = DefaultFlowRule.builder();
@@ -601,116 +650,147 @@ public class AppCommand extends AbstractShellCommand {
             printout = printout.concat("The total number of flow rules is : ");
             rulesbefore = flowRuleService.getFlowRuleCount();
             print(String.valueOf(rulesbefore));
-            printout = printout.concat(rulesbefore +"\n");
+            printout = printout.concat(rulesbefore + "\n");
+
+            print("######################Reading Input Rules#################################");
+            printout = printout.concat("######################Reading Input Rules#################################" + "\n");
 
             Set finale = finalnodeddistance.keySet();
             Iterator finaleiterator = finale.iterator();
-            while(finaleiterator.hasNext()){
+
+
+            while (finaleiterator.hasNext()) {
                 // create # of rules equal to the # in r
                 Object finalobj = finaleiterator.next();
                 Integer finaleint = Integer.valueOf(finalobj.toString());
-                int octetmax = 255;
-                int hostmax = 254;
-                int fourthoctet = 4;
-                int thirdoctect = 0;
-                int maxrules = r;
-                int addedrules = 0;
-                //int loops = 0;
-                int thirdoctectloop = ((r+4)/octetmax);
-                //iterate over the number of rules
-                for( int j = 0; j < thirdoctectloop + 1 ; j++) {
-                    if (addedrules == maxrules){
-                        print("added rules: " + addedrules);
-                        printout=printout.concat("added rules: " + addedrules+"\n");
-                        break;
-                        //dont do anymore if == total rules
-                    }
-                    if(j != 0){
-                        thirdoctect = thirdoctect + 1;
-                    }
+                BufferedReader bufferedReader = new BufferedReader
+                        (new FileReader("/home/brent/inputrules/rules.txt"));
+                String line;
+                String rule;
+                while ((line = bufferedReader.readLine()) != null) {
+                    rule = line;
+                    //print(rule);
+                    String denypattern = "(\\w+_\\w+_?\\w+?)\\s(\\d+.\\d+.\\d+.\\d+)";
+                    Pattern deny = Pattern.compile(denypattern);
+                    Matcher denymatcher = deny.matcher(rule);
+                    String denystring = "ip_deny";
+                    String vlanstring = "vlan_id_change";
 
-                    while(fourthoctet%octetmax < hostmax) {
-                        if (addedrules == maxrules){
-                            print("added rules: " + addedrules);
-                            printout = printout.concat("added rules: " + addedrules);
-                            rulesadded = addedrules;
-                            break;
-                            //dont do anymore if == total rules
+                    if( denymatcher.find()){
+                        if ((denymatcher.group(1).contains(denystring))){
+
+                            String denyipaddress = denymatcher.group(2);
+                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                            //build rule one
+                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                            short type = 0x800;
+                            int priority = 40000;
+                            int timeout = 10000;
+
+                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(denyipaddress + "/32");
+                            printout = printout.concat("" + "\n");
+
+                            String tempname = idtonum2.get(finaleint);
+                            //print(" rule place onto " + tempname);
+                            printout = printout.concat(" rule place onto " + tempname + "\n");
+                            DeviceId deviceId = DeviceId.deviceId(tempname);
+                            TrafficSelector selector = selectorbuilder.
+                                    matchIPDst(ip4Prefixdst1).
+                                    matchEthType(type).
+                                    build();
+                            TrafficTreatment treatment = treatmentbuilder.
+                                    drop().
+                                    build();
+                            FlowRule rule1 = flowrulebuilder.
+                                    withSelector(selector).
+                                    withTreatment(treatment).
+                                    makePermanent().
+                                    forDevice(deviceId).
+                                    fromApp(applicationId).
+                                    withPriority(priority).
+                                    withHardTimeout(timeout).
+                                    build();
+
+                            flowRuleService.applyFlowRules(rule1);
+                            rulesadded = rulesadded +1;
                         }
-                        fourthoctet = (fourthoctet + 1) % (octetmax);
+                        else if (denymatcher.group(1).contains(vlanstring)){
 
-                        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-                        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
-                        //build rule one
-                        ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-                        short type = 0x800;
-                        int priority = 40000;
-                        int timeout = 10000;
+                            String vlanipaddress = denymatcher.group(2);
+                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                            //build rule one
+                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                            short type = 0x800;
+                            int priority = 40000;
+                            int timeout = 10000;
+                            short vlanconverto = 2;
+                            VlanId vlanId = VlanId.vlanId(vlanconverto);
 
-                        String thirdoctetstring = String.valueOf(thirdoctect);
-                        String fourthoctectstring = String.valueOf(fourthoctet);
+                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(vlanipaddress + "/32");
+                            printout = printout.concat("" + "\n");
 
-                        Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
-                        print("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32");
-                        printout=printout.concat("10.0." + thirdoctetstring + "." + fourthoctectstring + "/32"+"\n");
-                        //Integer arraynum = nodedistance.get(i);
-                        String tempname = idtonum2.get(finaleint);
-                        print(" rule place onto " + tempname);
-                        printout = printout.concat(" rule place onto " + tempname+"\n");
-                        DeviceId deviceId = DeviceId.deviceId(tempname);
-                        TrafficSelector selector = selectorbuilder.
-                                matchIPDst(ip4Prefixdst1).
-                                matchEthType(type).
-                                build();
-                        TrafficTreatment treatment = treatmentbuilder.
-                                drop().
-                                build();
-                        FlowRule rule1 = flowrulebuilder.
-                                withSelector(selector).
-                                withTreatment(treatment).
-                                makePermanent().
-                                forDevice(deviceId).
-                                fromApp(applicationId).
-                                withPriority(priority).
-                                withHardTimeout(timeout).
-                                build();
+                            String tempname = idtonum2.get(finaleint);
+                            //print(" rule place onto " + tempname);
+                            printout = printout.concat(" rule place onto " + tempname + "\n");
+                            DeviceId deviceId = DeviceId.deviceId(tempname);
+                            TrafficSelector selector = selectorbuilder.
+                                    matchIPDst(ip4Prefixdst1).
+                                    matchEthType(type).
+                                    build();
+                            TrafficTreatment treatment = treatmentbuilder.
+                                     setVlanId(vlanId)
+                                    .build();
+                            FlowRule rule1 = flowrulebuilder.
+                                    withSelector(selector).
+                                    withTreatment(treatment).
+                                    makePermanent().
+                                    forDevice(deviceId).
+                                    fromApp(applicationId).
+                                    withPriority(priority).
+                                    withHardTimeout(timeout).
+                                    build();
 
-                        flowRuleService.applyFlowRules(rule1);
-                        addedrules = addedrules + 1;
+                            flowRuleService.applyFlowRules(rule1);
+                            rulesadded = rulesadded + 1;
+                        }
+
+                    } else {
+                        print("no bueno");
                     }
-                    //loops = loops +1;
-                    fourthoctet = 0;
                 }
             }
-            rulesafter = flowRuleService.getFlowRuleCount();
-            print("Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter);
-            printout=printout.concat(
-                    "Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter+"\n");
-            print("#############################Printing Results###############################");
-            try{
-                String rulescreated = String.valueOf(rulesadded);
-                String rulesrequested = String.valueOf(r);
-                String rules = "";
-                ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
-                Integer counter = 1;
-                for(Object s: iterable){
-                    rules = rules.concat("Rule " + counter + " :" + s.toString() + "\n");
-                    counter = counter + 1;
+
+                rulesafter = flowRuleService.getFlowRuleCount();
+                print("Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
+                        + " Rules Added #  " + rulesadded);
+                printout = printout.concat(
+                        "Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
+                                + "Rules Added #  " + rulesadded + "\n");
+                print("#############################Printing Results###############################");
+                try {
+                    String rulescreated = String.valueOf(rulesadded);
+                    String rulesrequested = String.valueOf(r);
+                    String rules = "";
+                    ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                    Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
+                    Integer counter = 1;
+                    for (Object s : iterable) {
+                        rules = rules.concat("Rule " + counter + " :" + s.toString() + "\n");
+                        counter = counter + 1;
+                    }
+                    String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
+                    FileWriter fileWriter = new FileWriter("/home/brent/captures/OUTCOME" + fileName + ".txt");
+                    fileWriter.write("rules created : " + rulescreated + "\n" +
+                            "  Rules requested : " + rulesrequested + "\n" + "  Rules added: " + rules + "\n" + printout);
+                    fileWriter.close();
+                } catch (IOException e) {
+                    print(e.toString());
                 }
-                String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
-                FileWriter fileWriter = new FileWriter("/home/brent/captures/OUTCOME"+fileName+".txt");
-                fileWriter.write("rules created : " + rulescreated + "\n"+
-                        "  Rules requested : " + rulesrequested + "\n" + "  Rules added: " + rules + "\n" + printout  );
-                fileWriter.close();
-            }
-            catch (IOException e) {
-                print(e.toString());
-            }
-        }
-        catch (Exception e)
-        {
+            } catch (IOException e) {
             print(e.toString());
         }
     }
