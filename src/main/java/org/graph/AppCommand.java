@@ -418,7 +418,7 @@ public class AppCommand extends AbstractShellCommand {
                                     counted = counted + 1;
                                 }
                                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
-                                FileWriter fileWriter = new FileWriter("/home/brent/topologychange/linkchangeDETECTEDRESULTS"+fileName+".txt");
+                                FileWriter fileWriter = new FileWriter("/home/brent/onostopologychange/LINK_CHANGE_DETECTEDRESULTS"+fileName+".txt");
                                 fileWriter.write(fileName + " | rules created : " + rulescreated +
                                         " | Rules requested : " + rulesrequested + "| Rules added: " + rules );
                                 fileWriter.close();
@@ -860,7 +860,7 @@ public class AppCommand extends AbstractShellCommand {
                     counter = counter + 1;
                 }
                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
-                FileWriter fileWriter = new FileWriter("/home/brent/captures/outcome"+fileName+".txt");
+                FileWriter fileWriter = new FileWriter("/home/brent/captures/OUTCOME"+fileName+".txt");
                 fileWriter.write("rules created : " + rulescreated +
                         " | Rules requested : " + rulesrequested + " | Rules added: " + rules );
                 fileWriter.close();
