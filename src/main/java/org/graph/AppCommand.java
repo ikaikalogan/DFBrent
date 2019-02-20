@@ -61,7 +61,7 @@ public class AppCommand extends AbstractShellCommand {
             public void event(LinkEvent event) {
                 if (event.type() != null) {
                     try {
-
+                        Thread.sleep(10);
                         int x, y=0, rulesbefore=0, rulesafter=0, rulesadded=0;
                         DeviceService deviceService = get(DeviceService.class);
                         TopologyService topologyService = get(TopologyService.class);
