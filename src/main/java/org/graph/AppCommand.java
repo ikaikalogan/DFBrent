@@ -210,6 +210,9 @@ public class AppCommand extends AbstractShellCommand {
                                 } else if (dist1 > dist2) {
                                     //nodedistance.remove(node1);
                                     finalnodeddistance.put(node2,dist2);
+                                } else if (dist1 == dist2){
+                                    finalnodeddistance.put(node1,dist1);
+                                    finalnodeddistance.put(node2,dist2);
                                 }
                                 i++;
                             }
@@ -228,7 +231,7 @@ public class AppCommand extends AbstractShellCommand {
                             printout = printout.concat("The total number of flow rules is : "+"\n");
                             rulesbefore = flowRuleService.getFlowRuleCount();
                             printout = printout.concat(rulesbefore +"\n");
-                            Set finale = nodedistance.keySet();
+                            Set finale = finalnodeddistance.keySet();
                             Iterator finaleiterator = finale.iterator();
                             while(finaleiterator.hasNext()){
                                 // create # of rules equal to the # in r
@@ -572,6 +575,9 @@ public class AppCommand extends AbstractShellCommand {
                 } else if (dist1 > dist2) {
                     //nodedistance.remove(node1);
                     finalnodeddistance.put(node2,dist2);
+                } else if (dist1 == dist2){
+                    finalnodeddistance.put(node1,dist1);
+                    finalnodeddistance.put(node2,dist2);
                 }
                 i++;
             }
@@ -597,7 +603,7 @@ public class AppCommand extends AbstractShellCommand {
             print(String.valueOf(rulesbefore));
             printout = printout.concat(rulesbefore +"\n");
 
-            Set finale = nodedistance.keySet();
+            Set finale = finalnodeddistance.keySet();
             Iterator finaleiterator = finale.iterator();
             while(finaleiterator.hasNext()){
                 // create # of rules equal to the # in r
