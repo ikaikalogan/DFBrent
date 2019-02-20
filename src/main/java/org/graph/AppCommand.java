@@ -61,6 +61,7 @@ public class AppCommand extends AbstractShellCommand {
             public void event(LinkEvent event) {
                 if (event.type() != null) {
                     try {
+
                         int x, y=0, rulesbefore=0, rulesafter=0, rulesadded=0;
                         DeviceService deviceService = get(DeviceService.class);
                         TopologyService topologyService = get(TopologyService.class);
@@ -93,6 +94,9 @@ public class AppCommand extends AbstractShellCommand {
                             idtoports.put(id,ports);
                             y++;
                         }
+                        String linkchangetype = event.type().toString();
+                        String linkchangename = event.type().name();
+                        printout = printout.concat(" EVENT " + linkchangetype + "\n" + "NAME" + linkchangename +"\n");
                         printout = printout.concat(
                                 "########################## device id to matrix number ##########################"+"\n");
                         Set set = idtonum.entrySet();
@@ -293,7 +297,7 @@ public class AppCommand extends AbstractShellCommand {
                             }
                             rulesafter = flowRuleService.getFlowRuleCount();
                             printout =printout.concat(
-                                    "Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter+"\n");
+                                    "Original Rulecount =  " + rulesbefore + "\n"+ " Rulecount After = " + rulesafter+"\n");
                             printout=printout.concat(
                                     "#############################Printing Results###############################"+"\n");
                             try{
@@ -304,13 +308,13 @@ public class AppCommand extends AbstractShellCommand {
                                 Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
                                 Integer counted = 1;
                                 for(Object s: iterable){
-                                    rules = rules.concat(" | Rule " + counted + " : " + s.toString() + " |");
+                                    rules = rules.concat(" Rule " + counted + " : " + s.toString() + "\n");
                                     counted = counted + 1;
                                 }
                                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
                                 FileWriter fileWriter = new FileWriter("/home/brent/onostopologychange/LINK_CHANGE_DETECTEDRESULTS"+fileName+".txt");
-                                fileWriter.write(fileName + " | rules created : " + rulescreated +
-                                        " | Rules requested : " + rulesrequested + "| Rules added: " + rules +" | " + printout );
+                                fileWriter.write(fileName + "Rules created : " + rulescreated + "\n"+
+                                        "Rules requested : " + rulesrequested + "\n"+ "Rules added: " + rules +"\n" + printout );
                                 fileWriter.close();
                             }
                             catch (IOException e) {
@@ -672,9 +676,9 @@ public class AppCommand extends AbstractShellCommand {
                 }
             }
             rulesafter = flowRuleService.getFlowRuleCount();
-            print("Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter);
+            print("Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter);
             printout=printout.concat(
-                    "Original Rulecount =  " + rulesbefore + " |  Rulecount After = " + rulesafter+"\n");
+                    "Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter+"\n");
             print("#############################Printing Results###############################");
             try{
                 String rulescreated = String.valueOf(rulesadded);
@@ -684,7 +688,7 @@ public class AppCommand extends AbstractShellCommand {
                 Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
                 Integer counter = 1;
                 for(Object s: iterable){
-                    rules = rules.concat("| Rule " + counter + " :" + s.toString() + " | ");
+                    rules = rules.concat("Rule " + counter + " :" + s.toString() + "\n");
                     counter = counter + 1;
                 }
                 String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
