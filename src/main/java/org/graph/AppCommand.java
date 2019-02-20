@@ -256,94 +256,95 @@ public class AppCommand extends AbstractShellCommand {
                                 String rule;
                                 while ((line = bufferedReader.readLine()) != null) {
                                     rule = line;
-                                    //print(rule);
+                                    print(rule);
                                     String denypattern = "(\\w+_\\w+_?\\w+?)\\s(\\d+.\\d+.\\d+.\\d+)";
+                                    String vlanpatten = "((\\w+_\\w+_?\\w+?)\\s(\\d+)_(\\d+))";
+
                                     Pattern deny = Pattern.compile(denypattern);
+                                    Pattern vlan = Pattern.compile(vlanpatten);
+
                                     Matcher denymatcher = deny.matcher(rule);
-                                    String denystring = "ip_deny";
-                                    String vlanstring = "vlan_id_change";
+                                    Matcher vlanmatcher = vlan.matcher(rule);
 
-                                    if( denymatcher.find()){
-                                        if ((denymatcher.group(1).contains(denystring))){
+                                    if( denymatcher.find()) {
+                                        print("DENY RULE");
+                                        String denyipaddress = denymatcher.group(2);
+                                        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                                        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                                        //build rule one
+                                        ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                                        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                                        short type = 0x800;
+                                        int priority = 40000;
+                                        int timeout = 10000;
 
-                                            String denyipaddress = denymatcher.group(2);
-                                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-                                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
-                                            //build rule one
-                                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-                                            short type = 0x800;
-                                            int priority = 40000;
-                                            int timeout = 10000;
+                                        Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(denyipaddress + "/32");
+                                        printout = printout.concat(rule + "\n");
 
-                                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(denyipaddress + "/32");
-                                            printout = printout.concat("" + "\n");
+                                        String tempname = idtonum2.get(finaleint);
+                                        //print(" rule place onto " + tempname);
+                                        printout = printout.concat(" rule place onto " + tempname + "\n");
+                                        DeviceId deviceId = DeviceId.deviceId(tempname);
+                                        TrafficSelector selector = selectorbuilder.
+                                                matchIPDst(ip4Prefixdst1).
+                                                matchEthType(type).
+                                                build();
+                                        TrafficTreatment treatment = treatmentbuilder.
+                                                drop().
+                                                build();
+                                        FlowRule rule1 = flowrulebuilder.
+                                                withSelector(selector).
+                                                withTreatment(treatment).
+                                                makePermanent().
+                                                forDevice(deviceId).
+                                                fromApp(applicationId).
+                                                withPriority(priority).
+                                                withHardTimeout(timeout).
+                                                build();
 
-                                            String tempname = idtonum2.get(finaleint);
-                                            //print(" rule place onto " + tempname);
-                                            printout = printout.concat(" rule place onto " + tempname + "\n");
-                                            DeviceId deviceId = DeviceId.deviceId(tempname);
-                                            TrafficSelector selector = selectorbuilder.
-                                                    matchIPDst(ip4Prefixdst1).
-                                                    matchEthType(type).
-                                                    build();
-                                            TrafficTreatment treatment = treatmentbuilder.
-                                                    drop().
-                                                    build();
-                                            FlowRule rule1 = flowrulebuilder.
-                                                    withSelector(selector).
-                                                    withTreatment(treatment).
-                                                    makePermanent().
-                                                    forDevice(deviceId).
-                                                    fromApp(applicationId).
-                                                    withPriority(priority).
-                                                    withHardTimeout(timeout).
-                                                    build();
+                                        flowRuleService.applyFlowRules(rule1);
+                                        rulesadded = rulesadded + 1;
 
-                                            flowRuleService.applyFlowRules(rule1);
-                                            rulesadded = rulesadded +1;
-                                        }
-                                        else if (denymatcher.group(1).contains(vlanstring)){
+                                    } else if (vlanmatcher.find()){
+                                        print("VLAN RULE");
+                                        Short vlanfrom = Short.parseShort(vlanmatcher.group(3));
+                                        Short vlanto = Short.parseShort(vlanmatcher.group(4));
 
-                                            String vlanipaddress = denymatcher.group(2);
-                                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-                                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
-                                            //build rule one
-                                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-                                            short type = 0x800;
-                                            int priority = 40000;
-                                            int timeout = 10000;
-                                            short vlanconverto = 2;
-                                            VlanId vlanId = VlanId.vlanId(vlanconverto);
+                                        VlanId vlanIdto = VlanId.vlanId(vlanto);
+                                        VlanId vlanIdfrom = VlanId.vlanId(vlanfrom);
 
-                                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(vlanipaddress + "/32");
-                                            printout = printout.concat("" + "\n");
+                                        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                                        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                                        //build rule one
+                                        ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                                        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                                        short type = 0x800;
+                                        int priority = 40000;
+                                        int timeout = 10000;
+                                        printout = printout.concat(rule + "\n");
+                                        String tempname = idtonum2.get(finaleint);
+                                        //print(" rule place onto " + tempname);
+                                        printout = printout.concat(" rule place onto " + tempname + "\n");
+                                        DeviceId deviceId = DeviceId.deviceId(tempname);
+                                        TrafficSelector selector = selectorbuilder.
+                                                matchVlanId(vlanIdfrom).
+                                                matchEthType(type).
+                                                build();
+                                        TrafficTreatment treatment = treatmentbuilder.
+                                                setVlanId(vlanIdto)
+                                                .build();
+                                        FlowRule rule1 = flowrulebuilder.
+                                                withSelector(selector).
+                                                withTreatment(treatment).
+                                                makePermanent().
+                                                forDevice(deviceId).
+                                                fromApp(applicationId).
+                                                withPriority(priority).
+                                                withHardTimeout(timeout).
+                                                build();
 
-                                            String tempname = idtonum2.get(finaleint);
-                                            //print(" rule place onto " + tempname);
-                                            printout = printout.concat(" rule place onto " + tempname + "\n");
-                                            DeviceId deviceId = DeviceId.deviceId(tempname);
-                                            TrafficSelector selector = selectorbuilder.
-                                                    matchIPDst(ip4Prefixdst1).
-                                                    matchEthType(type).
-                                                    build();
-                                            TrafficTreatment treatment = treatmentbuilder.
-                                                    setVlanId(vlanId)
-                                                    .build();
-                                            FlowRule rule1 = flowrulebuilder.
-                                                    withSelector(selector).
-                                                    withTreatment(treatment).
-                                                    makePermanent().
-                                                    forDevice(deviceId).
-                                                    fromApp(applicationId).
-                                                    withPriority(priority).
-                                                    withHardTimeout(timeout).
-                                                    build();
-
-                                            flowRuleService.applyFlowRules(rule1);
-                                            rulesadded = rulesadded + 1;
-                                        }
+                                        flowRuleService.applyFlowRules(rule1);
+                                        rulesadded = rulesadded + 1;
 
                                     } else {
                                         print("no bueno");
@@ -655,6 +656,7 @@ public class AppCommand extends AbstractShellCommand {
             print("######################Reading Input Rules#################################");
             printout = printout.concat("######################Reading Input Rules#################################" + "\n");
 
+
             Set finale = finalnodeddistance.keySet();
             Iterator finaleiterator = finale.iterator();
 
@@ -669,94 +671,95 @@ public class AppCommand extends AbstractShellCommand {
                 String rule;
                 while ((line = bufferedReader.readLine()) != null) {
                     rule = line;
-                    //print(rule);
+                    print(rule);
                     String denypattern = "(\\w+_\\w+_?\\w+?)\\s(\\d+.\\d+.\\d+.\\d+)";
+                    String vlanpatten = "((\\w+_\\w+_?\\w+?)\\s(\\d+)_(\\d+))";
+
                     Pattern deny = Pattern.compile(denypattern);
+                    Pattern vlan = Pattern.compile(vlanpatten);
+
                     Matcher denymatcher = deny.matcher(rule);
-                    String denystring = "ip_deny";
-                    String vlanstring = "vlan_id_change";
+                    Matcher vlanmatcher = vlan.matcher(rule);
 
-                    if( denymatcher.find()){
-                        if ((denymatcher.group(1).contains(denystring))){
+                    if( denymatcher.find()) {
+                        print("DENY RULE");
+                        String denyipaddress = denymatcher.group(2);
+                        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                        //build rule one
+                        ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                        short type = 0x800;
+                        int priority = 40000;
+                        int timeout = 10000;
 
-                            String denyipaddress = denymatcher.group(2);
-                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
-                            //build rule one
-                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-                            short type = 0x800;
-                            int priority = 40000;
-                            int timeout = 10000;
+                        Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(denyipaddress + "/32");
+                        printout = printout.concat(rule + "\n");
 
-                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(denyipaddress + "/32");
-                            printout = printout.concat("" + "\n");
+                        String tempname = idtonum2.get(finaleint);
+                        //print(" rule place onto " + tempname);
+                        printout = printout.concat(" rule place onto " + tempname + "\n");
+                        DeviceId deviceId = DeviceId.deviceId(tempname);
+                        TrafficSelector selector = selectorbuilder.
+                                matchIPDst(ip4Prefixdst1).
+                                matchEthType(type).
+                                build();
+                        TrafficTreatment treatment = treatmentbuilder.
+                                drop().
+                                build();
+                        FlowRule rule1 = flowrulebuilder.
+                                withSelector(selector).
+                                withTreatment(treatment).
+                                makePermanent().
+                                forDevice(deviceId).
+                                fromApp(applicationId).
+                                withPriority(priority).
+                                withHardTimeout(timeout).
+                                build();
 
-                            String tempname = idtonum2.get(finaleint);
-                            //print(" rule place onto " + tempname);
-                            printout = printout.concat(" rule place onto " + tempname + "\n");
-                            DeviceId deviceId = DeviceId.deviceId(tempname);
-                            TrafficSelector selector = selectorbuilder.
-                                    matchIPDst(ip4Prefixdst1).
-                                    matchEthType(type).
-                                    build();
-                            TrafficTreatment treatment = treatmentbuilder.
-                                    drop().
-                                    build();
-                            FlowRule rule1 = flowrulebuilder.
-                                    withSelector(selector).
-                                    withTreatment(treatment).
-                                    makePermanent().
-                                    forDevice(deviceId).
-                                    fromApp(applicationId).
-                                    withPriority(priority).
-                                    withHardTimeout(timeout).
-                                    build();
+                        flowRuleService.applyFlowRules(rule1);
+                        rulesadded = rulesadded + 1;
 
-                            flowRuleService.applyFlowRules(rule1);
-                            rulesadded = rulesadded +1;
-                        }
-                        else if (denymatcher.group(1).contains(vlanstring)){
+                    } else if (vlanmatcher.find()){
+                        print("VLAN RULE");
+                        Short vlanfrom = Short.parseShort(vlanmatcher.group(3));
+                        Short vlanto = Short.parseShort(vlanmatcher.group(4));
 
-                            String vlanipaddress = denymatcher.group(2);
-                            TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
-                            TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
-                            //build rule one
-                            ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                            //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
-                            short type = 0x800;
-                            int priority = 40000;
-                            int timeout = 10000;
-                            short vlanconverto = 2;
-                            VlanId vlanId = VlanId.vlanId(vlanconverto);
+                        VlanId vlanIdto = VlanId.vlanId(vlanto);
+                        VlanId vlanIdfrom = VlanId.vlanId(vlanfrom);
 
-                            Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(vlanipaddress + "/32");
-                            printout = printout.concat("" + "\n");
+                        TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
+                        TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
+                        //build rule one
+                        ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                        //DeviceId deviceId = DeviceId.deviceId("of:0000000000000001");
+                        short type = 0x800;
+                        int priority = 40000;
+                        int timeout = 10000;
+                        printout = printout.concat(rule + "\n");
+                        String tempname = idtonum2.get(finaleint);
+                        //print(" rule place onto " + tempname);
+                        printout = printout.concat(" rule place onto " + tempname + "\n");
+                        DeviceId deviceId = DeviceId.deviceId(tempname);
+                        TrafficSelector selector = selectorbuilder.
+                                matchVlanId(vlanIdfrom).
+                                matchEthType(type).
+                                build();
+                        TrafficTreatment treatment = treatmentbuilder.
+                                setVlanId(vlanIdto)
+                                .build();
+                        FlowRule rule1 = flowrulebuilder.
+                                withSelector(selector).
+                                withTreatment(treatment).
+                                makePermanent().
+                                forDevice(deviceId).
+                                fromApp(applicationId).
+                                withPriority(priority).
+                                withHardTimeout(timeout).
+                                build();
 
-                            String tempname = idtonum2.get(finaleint);
-                            //print(" rule place onto " + tempname);
-                            printout = printout.concat(" rule place onto " + tempname + "\n");
-                            DeviceId deviceId = DeviceId.deviceId(tempname);
-                            TrafficSelector selector = selectorbuilder.
-                                    matchIPDst(ip4Prefixdst1).
-                                    matchEthType(type).
-                                    build();
-                            TrafficTreatment treatment = treatmentbuilder.
-                                     setVlanId(vlanId)
-                                    .build();
-                            FlowRule rule1 = flowrulebuilder.
-                                    withSelector(selector).
-                                    withTreatment(treatment).
-                                    makePermanent().
-                                    forDevice(deviceId).
-                                    fromApp(applicationId).
-                                    withPriority(priority).
-                                    withHardTimeout(timeout).
-                                    build();
-
-                            flowRuleService.applyFlowRules(rule1);
-                            rulesadded = rulesadded + 1;
-                        }
+                        flowRuleService.applyFlowRules(rule1);
+                        rulesadded = rulesadded + 1;
 
                     } else {
                         print("no bueno");
