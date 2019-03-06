@@ -671,17 +671,18 @@ public class AppCommand extends AbstractShellCommand {
                 String rule;
                 Integer barrier = 1000;
                 Integer slowroll = 100;
-                if (rulesadded > barrier) {
-                    if ((rulesadded % slowroll) == 0) {
-                        try {
-                            Thread.sleep(75);
-                        } catch (Exception e) {
-                            print("sleep problem");
-                        }
-                    }
-                }
+
                 while ((line = bufferedReader.readLine()) != null) {
                     rule = line;
+                    try {
+                        if (rulesadded > barrier) {
+                            if ((rulesadded%slowroll)==0) {
+                                Thread.sleep(145);
+                            }
+                        }
+                    }catch (Exception e){
+                        print("sleep error");
+                    }
                     //print(rule);
                     String denypattern = "(\\w+_\\w+)\\s(\\d+\\.\\d+\\.\\d+\\.\\d+)";
                     String vlanpatten = "((\\w+_\\w+_?\\w+?)\\s(\\d+)_(\\d+))";
@@ -790,13 +791,13 @@ public class AppCommand extends AbstractShellCommand {
                     String rulescreated = String.valueOf(rulesadded);
                     String rulesrequested = String.valueOf(r);
                     String rules = "";
-                    ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
-                    Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
-                    Integer counter = 1;
-                    for (Object s : iterable) {
-                        rules = rules.concat("Rule " + counter + " :" + s.toString() + "\n");
-                        counter = counter + 1;
-                    }
+                    //ApplicationId applicationId = new DefaultApplicationId(158, "org.onosproject.graph");
+                    //Iterable iterable = flowRuleService.getFlowEntriesById(applicationId);
+                    //Integer counter = 1;
+                    //for (Object s : iterable) {
+                    //    rules = rules.concat("Rule " + counter + " :" + s.toString() + "\n");
+                    //    counter = counter + 1;
+                    //}
                     String fileName = new SimpleDateFormat("yyyyMMddHHmmssSS'.txt'").format(new Date());
                     FileWriter fileWriter = new FileWriter("/home/brent/captures/OUTCOME" + fileName + ".txt");
                     fileWriter.write("rules created : " + rulescreated + "\n" +
