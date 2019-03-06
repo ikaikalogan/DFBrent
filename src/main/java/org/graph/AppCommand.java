@@ -671,8 +671,8 @@ public class AppCommand extends AbstractShellCommand {
                 String rule;
                 Integer barrier = 1000;
                 Integer slowroll = 100;
-                if (rulesadded > 1000) {
-                    if ((rulesadded % 100) == 0) {
+                if (rulesadded > barrier) {
+                    if ((rulesadded % slowroll) == 0) {
                         try {
                             Thread.sleep(75);
                         } catch (Exception e) {
@@ -682,7 +682,7 @@ public class AppCommand extends AbstractShellCommand {
                 }
                 while ((line = bufferedReader.readLine()) != null) {
                     rule = line;
-                    print(rule);
+                    //print(rule);
                     String denypattern = "(\\w+_\\w+)\\s(\\d+\\.\\d+\\.\\d+\\.\\d+)";
                     String vlanpatten = "((\\w+_\\w+_?\\w+?)\\s(\\d+)_(\\d+))";
 
@@ -693,9 +693,9 @@ public class AppCommand extends AbstractShellCommand {
                     Matcher vlanmatcher = vlan.matcher(rule);
 
                     if( denymatcher.find()) {
-                        print("DENY RULE");
+                        //print("DENY RULE");
                         String denyipaddress = denymatcher.group(2);
-                        print (denyipaddress);
+                        //print (denyipaddress);
                         TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
                         TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
                         //build rule one
@@ -706,11 +706,11 @@ public class AppCommand extends AbstractShellCommand {
                         int timeout = 10000;
 
                         Ip4Prefix ip4Prefixdst1 = Ip4Prefix.valueOf(denyipaddress + "/32");
-                        printout = printout.concat(rule + "\n");
+                        //printout = printout.concat(rule + "\n");
 
                         String tempname = idtonum2.get(finaleint);
                         //print(" rule place onto " + tempname);
-                        printout = printout.concat(" rule place onto " + tempname + "\n");
+                        //printout = printout.concat(" rule place onto " + tempname + "\n");
                         DeviceId deviceId = DeviceId.deviceId(tempname);
                         TrafficSelector selector = selectorbuilder.
                                 matchIPDst(ip4Prefixdst1).
@@ -733,7 +733,7 @@ public class AppCommand extends AbstractShellCommand {
                         rulesadded = rulesadded + 1;
 
                     } else if (vlanmatcher.find()){
-                        print("VLAN RULE");
+                        //print("VLAN RULE");
                         Short vlanfrom = Short.parseShort(vlanmatcher.group(3));
                         Short vlanto = Short.parseShort(vlanmatcher.group(4));
 
@@ -748,10 +748,10 @@ public class AppCommand extends AbstractShellCommand {
                         short type = 0x800;
                         int priority = 40000;
                         int timeout = 10000;
-                        printout = printout.concat(rule + "\n");
+                        //printout = printout.concat(rule + "\n");
                         String tempname = idtonum2.get(finaleint);
                         //print(" rule place onto " + tempname);
-                        printout = printout.concat(" rule place onto " + tempname + "\n");
+                        //printout = printout.concat(" rule place onto " + tempname + "\n");
                         DeviceId deviceId = DeviceId.deviceId(tempname);
                         TrafficSelector selector = selectorbuilder.
                                 matchVlanId(vlanIdfrom).
