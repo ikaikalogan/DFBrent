@@ -669,10 +669,21 @@ public class AppCommand extends AbstractShellCommand {
                         (new FileReader("/home/brent/inputrules/rules.txt"));
                 String line;
                 String rule;
+                Integer barrier = 1000;
+                Integer slowroll = 100;
+                if (rulesadded > 1000) {
+                    if ((rulesadded % 100) == 0) {
+                        try {
+                            Thread.sleep(75);
+                        } catch (Exception e) {
+                            print("sleep problem");
+                        }
+                    }
+                }
                 while ((line = bufferedReader.readLine()) != null) {
                     rule = line;
                     print(rule);
-                    String denypattern = "(\\w+_\\w+_?\\w+?)\\s(\\d+.\\d+.\\d+.\\d+)";
+                    String denypattern = "(\\w+_\\w+)\\s(\\d+\\.\\d+\\.\\d+\\.\\d+)";
                     String vlanpatten = "((\\w+_\\w+_?\\w+?)\\s(\\d+)_(\\d+))";
 
                     Pattern deny = Pattern.compile(denypattern);
@@ -684,6 +695,7 @@ public class AppCommand extends AbstractShellCommand {
                     if( denymatcher.find()) {
                         print("DENY RULE");
                         String denyipaddress = denymatcher.group(2);
+                        print (denyipaddress);
                         TrafficSelector.Builder selectorbuilder = DefaultTrafficSelector.builder();
                         TrafficTreatment.Builder treatmentbuilder = DefaultTrafficTreatment.builder();
                         //build rule one
