@@ -53,7 +53,7 @@ public class AppCommand extends AbstractShellCommand {
     private int s = -1;
     @Argument(index = 1, name = "t", description = "destination", required = true, multiValued = false)
     private int t = -1;
-    @Argument(index = 2, name = "r", description = "# of rules", required = false, multiValued = false)
+    @Argument(index = 2, name = "r", description = "# of rules", required = true, multiValued = false)
     private int r = 1;
 
     @Override
@@ -65,7 +65,7 @@ public class AppCommand extends AbstractShellCommand {
                 if (event.type() != null) {
                     try {
 
-                        int x, y = 0, rulesbefore = 0, rulesafter = 0, rulesadded = 0;
+                        int x, y = 0, rulesbefore = 0, rulesafter = 0, rulesadded = 0, totalrules=0;
                         DeviceService deviceService = get(DeviceService.class);
                         TopologyService topologyService = get(TopologyService.class);
                         Topology topo = topologyService.currentTopology();
@@ -656,10 +656,8 @@ public class AppCommand extends AbstractShellCommand {
             print("######################Reading Input Rules#################################");
             printout = printout.concat("######################Reading Input Rules#################################" + "\n");
 
-
             Set finale = finalnodeddistance.keySet();
             Iterator finaleiterator = finale.iterator();
-
 
             while (finaleiterator.hasNext()) {
                 // create # of rules equal to the # in r
@@ -671,19 +669,23 @@ public class AppCommand extends AbstractShellCommand {
                 String rule;
                 Integer barrier = 1000;
                 Integer slowroll = 100;
-
+                Integer rulebatch = 10;
+                ArrayList<FlowRule> rulelist = new ArrayList<FlowRule>();
+                // start sleeping 200ms every 100 rules after 1000 rules are applied
                 while ((line = bufferedReader.readLine()) != null) {
                     rule = line;
                     try {
                         if (rulesadded > barrier) {
                             if ((rulesadded%slowroll)==0) {
-                                Thread.sleep(145);
+                                Thread.sleep(200);
                             }
                         }
                     }catch (Exception e){
                         print("sleep error");
                     }
-                    //print(rule);
+                    //print(String.valueOf("rules added " + rulesadded));
+                    //if rules
+
                     String denypattern = "(\\w+_\\w+)\\s(\\d+\\.\\d+\\.\\d+\\.\\d+)";
                     String vlanpatten = "((\\w+_\\w+_?\\w+?)\\s(\\d+)_(\\d+))";
 
@@ -730,7 +732,8 @@ public class AppCommand extends AbstractShellCommand {
                                 withHardTimeout(timeout).
                                 build();
 
-                        flowRuleService.applyFlowRules(rule1);
+                        //flowRuleService.applyFlowRules(rule1);
+                        rulelist.add(rule1);
                         rulesadded = rulesadded + 1;
 
                     } else if (vlanmatcher.find()){
@@ -771,12 +774,64 @@ public class AppCommand extends AbstractShellCommand {
                                 withHardTimeout(timeout).
                                 build();
 
-                        flowRuleService.applyFlowRules(rule1);
+                        //flowRuleService.applyFlowRules(rule1);
+                        rulelist.add(rule1);
                         rulesadded = rulesadded + 1;
 
                     } else {
                         print("no bueno");
                     }
+
+                    if ((r % rulebatch != 0 )){
+                        if (rulesadded > 0) {
+                            if ((rulesadded % rulebatch) == 0) {
+                                //FlowRuleOperations flowRuleOperations = flowruleopsbuilder.build();
+                                flowRuleService.applyFlowRules(
+                                        rulelist.get(0),
+                                        rulelist.get(1),
+                                        rulelist.get(2),
+                                        rulelist.get(3),
+                                        rulelist.get(4),
+                                        rulelist.get(5),
+                                        rulelist.get(6),
+                                        rulelist.get(7),
+                                        rulelist.get(8),
+                                        rulelist.get(9)
+                                );
+                                rulelist.clear();
+                            } else {
+                                for (int j = 0; j < rulelist.size(); j++) {
+                                    flowRuleService.applyFlowRules(rulelist.get(j));
+                                }
+                                rulelist.clear();
+                            }
+                        }
+
+                    }else if ((r % rulebatch) == 0) {
+                        //print("10 mod rules");
+                        if (rulesadded > 0) {
+                            //print("rules added > 0");
+                            if ((rulesadded % rulebatch) == 0) {
+                                //print ("rules added mod 10");
+                                //FlowRuleOperations flowRuleOperations = flowruleopsbuilder.build();
+                                flowRuleService.applyFlowRules(
+                                        rulelist.get(0),
+                                        rulelist.get(1),
+                                        rulelist.get(2),
+                                        rulelist.get(3),
+                                        rulelist.get(4),
+                                        rulelist.get(5),
+                                        rulelist.get(6),
+                                        rulelist.get(7),
+                                        rulelist.get(8),
+                                        rulelist.get(9)
+                                );
+                                rulelist.clear();
+                                //print(String.valueOf("size " + rulelist.size()));
+                            }
+                        }
+                    }
+
                 }
             }
 
