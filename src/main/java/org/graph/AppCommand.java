@@ -677,7 +677,7 @@ public class AppCommand extends AbstractShellCommand {
                     try {
                         if (rulesadded > barrier) {
                             if ((rulesadded%slowroll)==0) {
-                                Thread.sleep(200);
+                                Thread.sleep(75);
                             }
                         }
                     }catch (Exception e){
@@ -732,7 +732,7 @@ public class AppCommand extends AbstractShellCommand {
                                 withHardTimeout(timeout).
                                 build();
 
-                        //flowRuleService.applyFlowRules(rule1);
+                        flowRuleService.applyFlowRules(rule1);
                         rulelist.add(rule1);
                         rulesadded = rulesadded + 1;
 
@@ -774,14 +774,15 @@ public class AppCommand extends AbstractShellCommand {
                                 withHardTimeout(timeout).
                                 build();
 
-                        //flowRuleService.applyFlowRules(rule1);
+                        flowRuleService.applyFlowRules(rule1);
                         rulelist.add(rule1);
                         rulesadded = rulesadded + 1;
 
                     } else {
                         print("no bueno");
                     }
-
+                    //
+                    /*
                     if ((r % rulebatch != 0 )){
                         if (rulesadded > 0) {
                             if ((rulesadded % rulebatch) == 0) {
@@ -831,7 +832,8 @@ public class AppCommand extends AbstractShellCommand {
                             }
                         }
                     }
-
+                    */
+                    //
                 }
             }
 
