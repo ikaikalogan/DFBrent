@@ -77,6 +77,7 @@ public class AppCommand extends AbstractShellCommand {
                         HashMap<DeviceId, List> idtostats = new HashMap<>(); //device id to edges
                         HashMap<DeviceId, List> idtoports = new HashMap<>(); // devices and their associated ports
                         DefaultEdgeWeigher edgeWeigher = new DefaultEdgeWeigher();
+                        MetricLinkWeight linkWeight = new MetricLinkWeight();
                         FlowRuleService flowRuleService = get(FlowRuleService.class);
                         int devicenum = vertexes.size();
                         int[][] adjmatrix = new int[devicenum][devicenum];
@@ -115,7 +116,7 @@ public class AppCommand extends AbstractShellCommand {
                                 String edge = String.valueOf(edgetemp);
                                 String src = null;
                                 String dst = null;
-                                String pattern = "((of:)(\\d)*)";
+                                String pattern = "((of:)([a-zA-z0-9]*))";
                                 Pattern p = Pattern.compile(pattern);
                                 Matcher matcher = p.matcher(edge);
                                 if (matcher.find()) {
@@ -131,6 +132,7 @@ public class AppCommand extends AbstractShellCommand {
                                     int row = idtonum.get(id);
                                     int column = idtonum.get(destination);
                                     Weight weight = edgeWeigher.weight(edgetemp);
+                                    Weight weight1 = linkWeight.weight(edgetemp);
                                     String stringweight = String.valueOf(weight);
                                     int lastindex = stringweight.lastIndexOf('}');
                                     String sw = stringweight.substring(19, lastindex);
@@ -475,6 +477,7 @@ public class AppCommand extends AbstractShellCommand {
         HashMap<DeviceId, List> idtostats = new HashMap<>(); //device id to edges
         HashMap<DeviceId, List> idtoports = new HashMap<>(); // devices and their associated ports
         DefaultEdgeWeigher edgeWeigher = new DefaultEdgeWeigher();
+        MetricLinkWeight linkWeight = new MetricLinkWeight();
         FlowRuleService flowRuleService = get(FlowRuleService.class);
         int devicenum = vertexes.size();
         int[][] adjmatrix = new int[devicenum][devicenum];
@@ -516,7 +519,7 @@ public class AppCommand extends AbstractShellCommand {
                 String edge = String.valueOf(edgetemp);
                 String src = null;
                 String dst = null;
-                String pattern = "((of:)(\\d)*)";
+                String pattern = "((of:)([a-zA-z0-9]*))";
                 Pattern p = Pattern.compile(pattern);
                 Matcher matcher = p.matcher(edge);
                 if (matcher.find()) {
@@ -532,6 +535,7 @@ public class AppCommand extends AbstractShellCommand {
                     int row = idtonum.get(id);
                     int column = idtonum.get(destination);
                     Weight weight = edgeWeigher.weight(edgetemp);
+                    Weight weight1 = linkWeight.weight(edgetemp);
                     String stringweight = String.valueOf(weight);
                     int lastindex = stringweight.lastIndexOf('}');
                     String sw = stringweight.substring(19, lastindex);
@@ -668,18 +672,22 @@ public class AppCommand extends AbstractShellCommand {
                 String line;
                 String rule;
                 Integer barrier = 1000;
+
                 Integer slowroll = 100;
                 Integer rulebatch = 10;
-                ArrayList<FlowRule> rulelist = new ArrayList<FlowRule>();
+                //ArrayList<FlowRule> rulelist = new ArrayList<FlowRule>();
                 // start sleeping 200ms every 100 rules after 1000 rules are applied
                 while ((line = bufferedReader.readLine()) != null) {
                     rule = line;
                     try {
                         if (rulesadded > barrier) {
-                            if ((rulesadded%slowroll)==0) {
+                            if ((rulesadded % slowroll) == 0) {
+                                //System.gc();
                                 Thread.sleep(75);
+
                             }
                         }
+
                     }catch (Exception e){
                         print("sleep error");
                     }
@@ -733,7 +741,7 @@ public class AppCommand extends AbstractShellCommand {
                                 build();
 
                         flowRuleService.applyFlowRules(rule1);
-                        rulelist.add(rule1);
+                        //rulelist.add(rule1);
                         rulesadded = rulesadded + 1;
 
                     } else if (vlanmatcher.find()){
@@ -775,7 +783,7 @@ public class AppCommand extends AbstractShellCommand {
                                 build();
 
                         flowRuleService.applyFlowRules(rule1);
-                        rulelist.add(rule1);
+                        //rulelist.add(rule1);
                         rulesadded = rulesadded + 1;
 
                     } else {
@@ -832,17 +840,17 @@ public class AppCommand extends AbstractShellCommand {
                             }
                         }
                     }
-                    */
+                        */
                     //
                 }
             }
 
-                rulesafter = flowRuleService.getFlowRuleCount();
-                print("Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
-                        + " Rules Added #  " + rulesadded);
-                printout = printout.concat(
-                        "Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
-                                + "Rules Added #  " + rulesadded + "\n");
+                //rulesafter = flowRuleService.getFlowRuleCount();
+                //print("Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
+                //        + " Rules Added #  " + rulesadded);
+                //printout = printout.concat(
+                //        "Original Rulecount =  " + rulesbefore + "   Rulecount After = " + rulesafter
+                //                + "Rules Added #  " + rulesadded + "\n");
                 print("#############################Printing Results###############################");
                 try {
                     String rulescreated = String.valueOf(rulesadded);
