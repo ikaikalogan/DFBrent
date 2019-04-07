@@ -146,6 +146,7 @@ public class AppCommand extends AbstractShellCommand {
                         }
                         printout = printout.concat(
                                 "##########################    MATRIX    ########################################" + "\n");
+                        /*
                         for (int i = 0; i < devicenum; i++) {
                             printout = printout.concat(
                                     "Row " + i + "-------------------------------------------------------- Row " + i + "\n");
@@ -153,6 +154,7 @@ public class AppCommand extends AbstractShellCommand {
                                 printout = printout.concat(adjmatrix[i][j] + "\n");
                             }
                         }
+                        */
                         printout = printout.concat(
                                 "######################### SHORTEST PATHS #######################################" + "\n");
                         ShortestPath shorty = new ShortestPath(devicenum);
@@ -549,6 +551,7 @@ public class AppCommand extends AbstractShellCommand {
         print("##########################    MATRIX    ########################################");
         printout = printout.concat(
                 "##########################    MATRIX    ########################################" + "\n");
+        /*
         for (int i = 0; i < devicenum; i++) {
             print("Row " + i + "-------------------------------------------------------- Row " + i);
             printout = printout.concat(
@@ -558,6 +561,7 @@ public class AppCommand extends AbstractShellCommand {
                 printout = printout.concat(adjmatrix[i][j] + "\n");
             }
         }
+        */
         print("######################### SHORTEST PATHS #######################################");
         printout = printout.concat(
                 "######################### SHORTEST PATHS #######################################" + "\n");
